@@ -104,7 +104,7 @@
     <div id="game-viewport" class="relative w-full max-w-4xl h-[700px] glass-panel overflow-hidden flex flex-col shadow-2xl">
         
         <!-- 頂部狀態列 -->
-        <div class="p-4 flex justify-between items-center border-b border-cyan-900/50 text-xs tracking-widest text-cyan-500">
+        <div class="p-4 flex justify-between items-center border-b border-cyan-900/50 text-s tracking-widest text-cyan-500">
             <div class="flex items-center">
                 <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse mr-2"></span>
                 LOCATION: Z-CITY / DISTRICT 01
@@ -126,7 +126,7 @@
 
         <!-- 對話區域 -->
         <div class="h-80 p-8 bg-black/85 flex flex-col border-t border-cyan-900/40 relative">
-            <div id="speaker-name" class="text-cyan-400 font-bold mb-2 tracking-[0.2em] text-xs uppercase opacity-70">SYSTEM MESSAGE</div>
+            <div id="speaker-name" class="text-cyan-400 font-bold mb-2 tracking-[0.2em] text-s uppercase opacity-70">SYSTEM MESSAGE</div>
             <div id="dialog-text" class="text-xl leading-relaxed mb-4 typing-effect text-gray-100 min-h-[3.5em]"></div>
             
             <!-- 分歧選擇區 -->
@@ -181,61 +181,93 @@
                 text: "今天早上【宇宙太陽能板】會經過【Z市】上方建議出門前吃維生素C避免營養不良，地表天氣....",
                 image: "pic/morning_news.png",
                 choices: [
-                    { text: " 碰了碰耳朵，將【預報鬧鐘】關閉", next: "shut_off_1" },
-                    { text: "（安靜地聽完今日預報內容）", next: "listen_all" }
+                    { text: " 碰了碰耳朵，將【預報鬧鐘】關閉", next: "c_1_a_1" },
+                    { text: "（安靜地聽完今日預報內容）", next: "c_1_b_1" }
                 ]
             },
-            "listen_all": {
+            "c_1_b_1": {
                 speaker: "B (預報鬧鐘)",
                 text: "今日新聞重點：AI NPC 生活的伺服器與人類的伺服器分開，避免人類的速度影響 AI 的效率。",
-                image: "pic/listen_all.png",
+                image: "pic/c_1_b_1.png",
                 knowledge: "<b>資源拆分概念</b><br>這涉及晶片設計中的<b>異質整合</b>。將不同性質的工作交給專屬的處理單元。",
-                choices: [{ text: "【下一頁】", next: "shut_off" }]
+                choices: [{ text: "【下一頁】", next: "c_1_b_2" }]
             },
-            "shut_off_1": {
+            "c_1_b_2": {
+                speaker: "勇者",
+                text: "昨天玩了一天的【戰地王者】感覺好爽阿",
+                image: "pic/c_1_b_2.png",
+                choices: [{ text: "【下一頁】", next: "e_1_1" }]
+            },
+            "c_1_a_1": {
                 speaker: "勇者",
                 text: "昨天玩了一天的【戰地王者】感覺好累阿，超級不想講話的",
-                image: "pic/shut_off_2.png",
-                choices: [{ text: "【下一頁】", next: "shut_off_2" }]
+                image: "pic/c_1_a_2.png",
+                choices: [{ text: "【下一頁】", next: "c_1_a_2" }]
             },
-            "shut_off_2": {
+            "c_1_a_2": {
                 speaker: "勇者",
                 text: "忘記把【預報鬧鐘】關了被吵醒就睡不著了",
-                image: "pic/shut_off_1.png",
-                choices: [{ text: "【下一頁】", next: "end_1" }]
+                image: "pic/c_1_a_1.png",
+                choices: [{ text: "【下一頁】", next: "e_1_1" }]
             },
-            "end_1": {
+            "e_1_1": {
                 speaker: "SYSTEM",
                 text: "誰阿",
-                image: "pic/end_1.png",
-                choices: [{ text: "重新開始體驗", next: "end_2" }]
+                image: "pic/e_1_1.png",
+                choices: [{ text: "重新開始體驗", next: "e_1_2" }]
             },
-            "branch_1": {
+            "e_1_2": {
                 speaker: "朋友",
                 text: "ㄟㄟ，A我今天就不玩戰地了，我有事",
-                image: "pic/end_2.png",
+                image: "pic/e_1_2.png",
                 choices: [
-                    { text: "甚麼事啊，比好朋友還重要", next: "branch_1_end" },
-                    { text: "好喔", next: "branch_1_next" },
-                    { text: "什麼事我也要去", next: "branch_1_end" }
+                    { text: "甚麼事啊，比好朋友還重要", next: "c_2_a_1" },
+                    { text: "好喔", next: "c_2_a_2" },
+                    { text: "什麼事我也要去", next: "c_2_a_2" }
                 ]
             },
-            "branch_2": {
+            "c_2_a_1": {
+                speaker: "朋友",
+                text: "少狗腿了",
+                image: "pic/c_2_a_1.png",
+                choices: [{ text: "【下一頁】", next: "c_2_a_2" }]
+            },
+            "c_2_a_2": {
                 speaker: "朋友",
                 text: "今天不是說NPC的伺服器要跟人類的伺服器拆分",
-                image: "pic/branch_2.png",
+                image: "pic/c_2_a_2.png",
                 choices: [
-                    { text: "有這回事", next: "branch_2_end" },
-                    { text: "我知道阿", next: "branch_2_next" },
+                    { text: "有這回事", next: "c_3_a_1" },
+                    { text: "我知道阿", next: "c_3_a_1" }
                 ]
-            }
+            },
+            "c_3_a_1": {
+                speaker: "朋友",
+                text: ":對啦，哈哈，沒在看預報齁",
+                image: "pic/c_3_a_1.png",
+                choices: [{ text: "【下一頁】", next: "c_2_a_2" }]
+            },
+            "e_3_1": {
+                speaker: "朋友",
+                text: ":所以今天玩戰地沒有NPC可以玩，那多無聊啊，只好周再一起玩吧",
+                image: "pic/e_3_1.png",
+                choices: [{ text: "【下一頁】", next: "e_3_2" }]
+            },
+            "e_3_2": {
+                speaker: "朋友",
+                text: ":(掛電話))",
+                image: "pic/e_3_2.png",
+                choices: [{ text: "【下一頁】", next: "e_3_2" }]
+            },
         };
 
+        let typeTimer = null;
         let currentId = "start";
         let historyStack = [];
 
         function renderScene(id) {
             const scene = storyData[id];
+            if (!scene) return;
             const dialogEl = document.getElementById('dialog-text');
             const speakerEl = document.getElementById('speaker-name');
             const photoEl = document.getElementById('scene-photo');
@@ -246,6 +278,8 @@
 
             speakerEl.innerText = scene.speaker;
             
+            if (typeTimer) clearTimeout(typeTimer);
+
             // 更換圖片時先透明，onload 後會變回不透明 (這在 CSS 處理了)
             photoEl.style.opacity = 0;
             photoEl.src = scene.image;
@@ -253,10 +287,10 @@
             dialogEl.innerText = "";
             let i = 0;
             const type = () => {
-                if (i < scene.text.length) {
-                    dialogEl.innerText += scene.text.charAt(i);
+                if (i <= scene.text.length) {
+                    dialogEl.innerText = scene.text.slice(0, i);
                     i++;
-                    setTimeout(type, 25);
+                    typeTimer = setTimeout(type, 30); 
                 }
             };
             type();
@@ -275,7 +309,7 @@
                 nextBtn.style.display = "none";
                 scene.choices.forEach(choice => {
                     const btn = document.createElement('button');
-                    btn.className = "choice-btn w-full py-2 px-4 rounded-md text-left text-xs tracking-wide text-gray-300 hover:text-cyan-400 animate-in fade-in slide-in-from-left-2 duration-500 fill-mode-forwards";
+                    btn.className = "choice-btn w-full py-2 px-4 rounded-md text-left text-s tracking-wide text-gray-300 hover:text-cyan-400 animate-in fade-in slide-in-from-left-2 duration-500 fill-mode-forwards";
                     btn.innerText = `> ${choice.text}`;
                     btn.onclick = () => {
                         historyStack.push(currentId);
@@ -307,7 +341,7 @@
         }
 
         window.onload = () => {
-            renderScene("start");
+            renderScene("start_1");
             const now = new Date();
             document.getElementById('date-display').innerText = `DATE: 2111.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
         };
