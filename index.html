@@ -211,7 +211,7 @@
                 choices: [{ text: "【下一頁】", next: "e_1_1" }]
             },
             "e_1_1": {
-                speaker: "SYSTEM",
+                speaker: "勇者",
                 text: "誰阿",
                 image: "pic/e_1_1.png",
                 choices: [{ text: "重新開始體驗", next: "e_1_2" }]
@@ -238,7 +238,7 @@
                 image: "pic/c_2_a_2.png",
                 choices: [
                     { text: "有這回事", next: "c_3_a_1" },
-                    { text: "我知道阿", next: "c_3_a_1" }
+                    { text: "我知道阿", next: "e_3_1" }
                 ]
             },
             "c_3_a_1": {
@@ -249,15 +249,27 @@
             },
             "e_3_1": {
                 speaker: "朋友",
-                text: ":所以今天玩戰地沒有NPC可以玩，那多無聊啊，只好周再一起玩吧",
+                text: ":所以今天玩戰地沒有NPC可以玩，那多無聊啊，只好下周再一起玩吧",
                 image: "pic/e_3_1.png",
                 choices: [{ text: "【下一頁】", next: "e_3_2" }]
             },
             "e_3_2": {
-                speaker: "朋友",
+                speaker: "勇者",
                 text: ":(掛電話))",
                 image: "pic/e_3_2.png",
-                choices: [{ text: "【下一頁】", next: "e_3_2" }]
+                choices: [{ text: "【下一頁】", next: "e_3_3" }]
+            },
+            "e_3_3": {
+                speaker: "勇者",
+                text: "伺服器是什麼阿，NPC不是很多嗎?查一下好了",
+                image: "pic/e_3_3.png",
+                choices: [{ text: "【下一頁】", next: "e_3_4" }]
+            },
+            "e_3_4": {
+                speaker: "勇者",
+                text: "人工智能:我問你喔，剛剛D說甚麼伺服器拆分，沒有NPC是甚麼意思",
+                image: "pic/e_3_3.png",
+                choices: [{ text: "【下一頁】", next: "e_3_" }]
             },
         };
 
