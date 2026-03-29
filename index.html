@@ -267,9 +267,95 @@
             },
             "e_3_4": {
                 speaker: "勇者",
-                text: "人工智能:我問你喔，剛剛D說甚麼伺服器拆分，沒有NPC是甚麼意思",
+                text: "人工智能你在嗎? 我問你喔，剛剛D說甚麼伺服器拆分，沒有NPC是甚麼意思",
                 image: "pic/e_3_3.png",
-                choices: [{ text: "【下一頁】", next: "e_3_" }]
+                choices: [{ text: "【下一頁】", next: "e_3_5" }]
+            },
+            "e_3_5": {
+                speaker: "人工智能",
+                text: "這件事最近很火熱，是指最近因為人類的效率遠低於AI NPC太多，為了讓AI可以更高效的溝通合作工作不用考慮人類思考時間，所以特別開了一個伺服器讓AI相互溝通。",
+                image: "pic/e_3_5.png",
+                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+            },
+            "e_3_6": {
+                speaker: "勇者",
+                text: "好多名詞都聽不懂",
+                image: "pic/e_3_6.png",
+                choices: [
+                    { text: "NPC是甚麼", next: "c_4_a_1" },
+                    { text: "伺服器是甚麼", next: "c_4_a_2" },
+                    { text: "所以為什麼要拆分", next: "c_4_a_3" },
+                    { text: "原來如此", next: "e_4_1" }
+                ]
+            },
+            "c_4_a_1": {
+                speaker: "人工智能",
+                text: "NPC 是 非玩家角色的縮寫，2050開始意旨所有非實體在元宇宙中行動的AI角色，平常你在玩遊戲時的那些陪玩人物就是NPC。",
+                image: "pic/c_4_a.png",
+                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+            },
+            "c_4_a_2": {
+                speaker: "人工智能",
+                text: "伺服器就像網路世界的「大電腦」，負責存資料、處理請求、把結果傳回來。你上網、玩遊戲、看影片時，它在背後幫你完成一切。",
+                image: "pic/c_4_a.png",
+                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+            },
+            "c_4_a_3": {
+                speaker: "人工智能",
+                text: "這件事最近很火熱，是指最近因為人類的效率遠低於 AI NPC 太多，為了讓AI可以更高效的溝通合作工作不用考慮人類思考時間，所以特別開了一個伺服器讓AI相互溝通。",
+                image: "pic/c_4_a.png",
+                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+            },
+            "e_4_1": {
+                speaker: "朋友",
+                text: "看來今天只有一個人呢",
+                image: "pic/e_4_1.png",
+                choices: [{ text: "【下一頁】", next: "e_4_2" }]
+            },
+            "e_4_2": {
+                speaker: "朋友",
+                text: "出門吃個早餐好了，久違的出門",
+                image: "pic/e_4_1.png",
+                choices: [{ text: "【下一頁】", next: "e_4_3" }]
+            },
+            "e_4_3": {
+                speaker: "朋友",
+                text: "阿呀!衣服怎麼都沒洗",
+                image: "pic/e_4_3.png",
+                choices: [{ text: "【下一頁】", next: "e_4_4" }]
+            },
+            "e_4_4": {
+                speaker: "朋友",
+                text: "難道要繼續穿昨天的出門！！",
+                image: "pic/e_4_4.png",
+                choices: [
+                    { text: "繼續穿昨天的出門好了", next: "c_5_a_1" },
+                    { text: "洗個衣服好了", next: "c_5_a_2" },
+                ]
+            },
+            "c_5_a_1": {
+                speaker: "人工智能",
+                text: "提醒穿髒衣服可能導致這些缺點：\n 細菌多 → 容易長痘、皮膚癢或感染 \n。 有異味 → 讓人覺得不乾淨，影響人際關係。 \n外表不整潔 → 給人懶散、不重視自己的印象......",
+                image: "pic/c_5_a_1.png",
+                choices: [{ text: "【下一頁】", next: "c_5_a_3" }]
+            },
+            "c_5_a_2": {
+                speaker: "勇者",
+                text: "(一個小時後)",
+                image: "pic/c_5_a_2.png",
+                choices: [{ text: "【下一頁】", next: "c_5_a_4" }]
+            },
+            "c_5_a_3": {
+                speaker: "勇者",
+                text: "我當然知道，煩死了",
+                image: "pic/e_4_1.png",
+                choices: [{ text: "【下一頁】", next: "c_5_a_4" }]
+            },
+            "c_5_a_4": {
+                speaker: "勇者",
+                text: "(照照鏡子)還行，出門吧",
+                image: "pic/c_5_a_4.png",
+                choices: [{ text: "【下一頁】", next: "e_3_6" }]
             },
         };
 
