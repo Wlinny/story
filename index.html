@@ -14,10 +14,14 @@
             color: #e0e6ed;
             overflow: hidden;
             margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
 
         .glass-panel {
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(0, 255, 204, 0.2);
             border-radius: 1rem;
@@ -42,14 +46,15 @@
         }
 
         .choice-btn {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .choice-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 255, 204, 0.1);
             border-color: rgba(0, 255, 204, 0.5);
+            padding-left: 1.5rem;
         }
 
         .typing-effect::after {
@@ -66,45 +71,37 @@
         }
 
         #knowledge-card {
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: scale(0.9) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(0.9);
             opacity: 0;
             pointer-events: none;
         }
         #knowledge-card.active {
-            transform: scale(1) translateY(0);
+            transform: scale(1);
             opacity: 1;
             pointer-events: auto;
         }
 
-        /* 核心修改：統一圖片大小與裁切邏輯 */
-        .scene-display {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            border-radius: 0.5rem;
+        /* 滾動條樣式優化 */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
         }
-        
-        .scene-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* 自動裁切填滿，不變形 */
-            object-position: center; /* 始中保持中心對齊 */
-            transition: opacity 0.7s ease;
-            box-shadow: 0 0 40px rgba(0, 255, 204, 0.2);
-            border: 1px solid rgba(0, 255, 204, 0.3);
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 204, 0.3);
+            border-radius: 10px;
         }
     </style>
 </head>
-<body class="bg-grid min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-grid p-4">
 
-    <div id="game-viewport" class="relative w-full max-w-4xl h-[700px] glass-panel overflow-hidden flex flex-col shadow-2xl">
+    <!-- 主遊戲容器：高度自適應，最大高度不超過螢幕 -->
+    <div id="game-viewport" class="relative w-full max-w-4xl max-h-[95vh] glass-panel overflow-hidden flex flex-col shadow-2xl">
         
         <!-- 頂部狀態列 -->
-        <div class="p-4 flex justify-between items-center border-b border-cyan-900/50 text-s tracking-widest text-cyan-500">
+        <div class="p-3 md:p-4 flex justify-between items-center border-b border-cyan-900/50 text-xs tracking-widest text-cyan-500 shrink-0">
             <div class="flex items-center">
                 <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse mr-2"></span>
                 LOCATION: Z-CITY / DISTRICT 01
@@ -112,51 +109,56 @@
             <div id="date-display">DATE: 2111.05.24</div>
         </div>
 
-        <!-- 視覺呈現區 -->
-        <div class="flex-grow flex items-center justify-center relative p-6 overflow-hidden bg-black/40">
-            <div id="scene-display-container" class="scene-display">
-                <img id="scene-photo" class="scene-img opacity-0" src="" alt="場景圖" onload="this.style.opacity=1">
+        <!-- 視覺呈現區：固定 16:9 比例 -->
+        <div class="w-full bg-black flex items-center justify-center relative overflow-hidden shrink-0">
+            <div class="w-full aspect-video relative">
+                <img id="scene-photo" class="w-full h-full object-cover opacity-0 transition-opacity duration-700" src="" alt="場景圖" onload="this.style.opacity=1">
+                
+                <!-- 知識按鈕：改到圖片角落 -->
+                <button id="info-trigger" class="hidden absolute top-4 right-4 w-10 h-10 rounded-full bg-yellow-500/20 border-2 border-yellow-500 flex items-center justify-center text-yellow-500 animate-bounce cursor-pointer z-10 hover:bg-yellow-500 hover:text-black transition-all" onclick="toggleKnowledge()">
+                    <span class="font-bold text-sm">i</span>
+                </button>
             </div>
-            
-            <!-- 知識按鈕 -->
-            <button id="info-trigger" class="hidden absolute top-10 right-10 w-12 h-12 rounded-full bg-yellow-500/20 border-2 border-yellow-500 flex items-center justify-center text-yellow-500 animate-bounce cursor-pointer z-10 hover:bg-yellow-500 hover:text-black transition-all" onclick="toggleKnowledge()">
-                <span class="font-bold">i</span>
-            </button>
         </div>
 
-        <!-- 對話區域 -->
-        <div class="h-80 p-8 bg-black/85 flex flex-col border-t border-cyan-900/40 relative">
-            <div id="speaker-name" class="text-cyan-400 font-bold mb-2 tracking-[0.2em] text-s uppercase opacity-70">SYSTEM MESSAGE</div>
-            <div id="dialog-text" class="text-xl leading-relaxed mb-4 typing-effect text-gray-100 min-h-[3.5em]"></div>
+        <!-- 對話區域：具備滾動功能 -->
+        <div class="flex-grow flex flex-col p-6 md:p-8 bg-black/85 border-t border-cyan-900/40 min-h-0">
+            <div id="speaker-name" class="text-cyan-400 font-bold mb-2 tracking-[0.2em] text-xs uppercase opacity-70 shrink-0">SYSTEM MESSAGE</div>
             
-            <!-- 分歧選擇區 -->
-            <div id="branch-container" class="flex flex-col gap-2 mb-4"></div>
+            <!-- 文字內容容器：在 iPad 上若內容過多可滾動 -->
+            <div id="content-scroll-area" class="flex-grow overflow-y-auto pr-2 custom-scroll mb-4">
+                <div id="dialog-text" class="text-lg md:text-xl leading-relaxed mb-4 typing-effect text-gray-100"></div>
+                
+                <!-- 分歧選擇區 -->
+                <div id="branch-container" class="flex flex-col gap-3"></div>
+            </div>
 
-            <!-- 導覽按鈕區 -->
-            <div class="mt-auto flex gap-4 pt-4 border-t border-white/5">
-                <button id="prev-btn" class="nav-btn flex-1 py-3 px-6 rounded-lg text-center text-sm font-bold tracking-widest text-gray-400 uppercase" onclick="goBack()">
+            <!-- 導覽按鈕區：固定在底部 -->
+            <div class="mt-auto flex gap-4 pt-4 border-t border-white/5 shrink-0">
+                <button id="prev-btn" class="nav-btn flex-1 py-3 px-4 rounded-lg text-center text-sm font-bold tracking-widest text-gray-400 uppercase" onclick="goBack()">
                     ← 上一頁
                 </button>
-                <button id="next-btn" class="nav-btn flex-[2] py-3 px-6 rounded-lg text-center text-sm font-bold tracking-widest text-cyan-400 uppercase">
+                <button id="next-btn" class="nav-btn flex-[2] py-3 px-4 rounded-lg text-center text-sm font-bold tracking-widest text-cyan-400 uppercase">
                     下一頁 →
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 知識卡片 -->
+    <!-- 知識卡片彈窗 -->
     <div id="knowledge-card" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-        <div class="max-w-md w-full glass-panel p-8 relative border-yellow-500/50 border-2 shadow-[0_0_50px_rgba(234,179,8,0.2)]">
+        <div class="max-w-md w-full glass-panel p-6 md:p-8 relative border-yellow-500/50 border-2 shadow-[0_0_50px_rgba(234,179,8,0.2)]">
             <button class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onclick="toggleKnowledge()">✕</button>
-            <h3 class="text-yellow-500 font-bold text-2xl mb-6 flex items-center">
+            <h3 class="text-yellow-500 font-bold text-xl md:text-2xl mb-6 flex items-center">
                 <span class="mr-3">💡</span> 未來技術筆記
             </h3>
-            <div id="knowledge-content" class="text-gray-200 text-base leading-loose mb-8"></div>
+            <div id="knowledge-content" class="text-gray-200 text-sm md:text-base leading-loose mb-8"></div>
             <button class="w-full py-3 bg-yellow-500 text-black font-bold hover:bg-yellow-400 transition-colors rounded-lg uppercase tracking-widest" onclick="toggleKnowledge()">確認理解</button>
         </div>
     </div>
 
     <script>
+        // 保持原本的資料結構
         const storyData = {
             "start_1": {
                 speaker: "人工智能",
@@ -178,263 +180,294 @@
             },
             "morning_news": {
                 speaker: "人工智能",
-                text: "今天早上【宇宙太陽能板】會經過【Z市】上方建議出門前吃維生素C避免營養不良，地表天氣....",
+                text: "今天早上【宇宙太陽能板】會經過【Z市】上方，建議出門前吃維生素C避免營養不良，地表天氣預報顯示今日乾爽...",
                 image: "pic/morning_news.png",
                 choices: [
-                    { text: " 碰了碰耳朵，將【預報鬧鐘】關閉", next: "c_1_a_1" },
+                    { text: "碰了碰耳朵，將【預報鬧鐘】關閉", next: "c_1_a_1" },
                     { text: "（安靜地聽完今日預報內容）", next: "c_1_b_1" }
                 ]
             },
             "c_1_b_1": {
                 speaker: "B (預報鬧鐘)",
-                text: "今日新聞重點：AI NPC 生活的伺服器與人類的伺服器分開，避免人類的速度影響 AI 的效率。",
+                text: "今日新聞重點：AI NPC 生活的伺服器與人類的伺服器分開，避免人類的速度影響 AI 的效率。這是一個重大的架構調整。",
                 image: "pic/c_1_b_1.png",
-                knowledge: "<b>資源拆分概念</b><br>這涉及晶片設計中的<b>異質整合</b>。將不同性質的工作交給專屬的處理單元。",
+                knowledge: "<b>資源拆分概念</b><br>這涉及晶片設計中的<b>異質整合</b>。將不同性質的工作交給專屬的處理單元，就像 CPU 與 GPU 分工一樣，讓 AI 在專屬環境中以微秒級速度運行。",
                 choices: [{ text: "【下一頁】", next: "c_1_b_2" }]
             },
             "c_1_b_2": {
                 speaker: "勇者",
-                text: "昨天玩了一天的【戰地王者】感覺好爽阿",
+                text: "昨天玩了一天的【戰地王者】感覺好爽阿！",
                 image: "pic/c_1_b_2.png",
                 choices: [{ text: "【下一頁】", next: "e_1_1" }]
             },
             "c_1_a_1": {
                 speaker: "勇者",
-                text: "昨天玩了一天的【戰地王者】感覺好累阿，超級不想講話的",
+                text: "昨天玩了一天的【戰地王者】感覺好累阿，超級不想講話的...",
                 image: "pic/c_1_a_2.png",
                 choices: [{ text: "【下一頁】", next: "c_1_a_2" }]
             },
             "c_1_a_2": {
                 speaker: "勇者",
-                text: "忘記把【預報鬧鐘】關了被吵醒就睡不著了",
+                text: "忘記把【預報鬧鐘】關了被吵醒就睡不著了。",
                 image: "pic/c_1_a_1.png",
                 choices: [{ text: "【下一頁】", next: "e_1_1" }]
             },
             "e_1_1": {
                 speaker: "勇者",
-                text: "誰阿",
+                text: "誰啊？這時候打來...",
                 image: "pic/e_1_1.png",
                 choices: [{ text: "重新開始體驗", next: "e_1_2" }]
             },
             "e_1_2": {
                 speaker: "朋友",
-                text: "ㄟㄟ，A我今天就不玩戰地了，我有事",
+                text: "ㄟㄟ，我今天就不玩戰地了，我有事。",
                 image: "pic/e_1_2.png",
                 choices: [
-                    { text: "甚麼事啊，比好朋友還重要", next: "c_2_a_1" },
-                    { text: "好喔", next: "c_2_a_2" },
-                    { text: "什麼事我也要去", next: "c_2_a_2" }
+                    { text: "什麼事啊，比好朋友還重要？", next: "c_2_a_1" },
+                    { text: "好喔，那我知道了。", next: "c_2_a_2" },
+                    { text: "什麼事？我也要去！", next: "c_2_a_2" }
                 ]
             },
             "c_2_a_1": {
                 speaker: "朋友",
-                text: "少狗腿了",
+                text: "少狗腿了你！是真的正經事。",
                 image: "pic/c_2_a_1.png",
                 choices: [{ text: "【下一頁】", next: "c_2_a_2" }]
             },
             "c_2_a_2": {
                 speaker: "朋友",
-                text: "今天不是說NPC的伺服器要跟人類的伺服器拆分",
+                text: "今天不是說 NPC 的伺服器要跟人類的伺服器拆分嗎？",
                 image: "pic/c_2_a_2.png",
                 choices: [
-                    { text: "有這回事", next: "c_3_a_1" },
-                    { text: "我知道阿", next: "e_3_1" }
+                    { text: "有這回事？", next: "c_3_a_1" },
+                    { text: "我知道啊，新聞有說。", next: "e_3_1" }
                 ]
             },
             "c_3_a_1": {
                 speaker: "朋友",
-                text: ":對啦，哈哈，沒在看預報齁",
+                text: "對啦，哈哈，就說你沒在看預報齁！",
                 image: "pic/c_3_a_1.png",
                 choices: [{ text: "【下一頁】", next: "c_2_a_2" }]
             },
             "e_3_1": {
                 speaker: "朋友",
-                text: ":所以今天玩戰地沒有NPC可以玩，那多無聊啊，只好下周再一起玩吧",
+                text: "所以今天玩戰地沒有 NPC 可以殺，那多無聊啊，只好下周再一起玩吧。",
                 image: "pic/e_3_1.png",
                 choices: [{ text: "【下一頁】", next: "e_3_2" }]
             },
             "e_3_2": {
                 speaker: "勇者",
-                text: ":(掛電話))",
+                text: "（掛電話）...這算什麼理由。",
                 image: "pic/e_3_2.png",
                 choices: [{ text: "【下一頁】", next: "e_3_3" }]
             },
             "e_3_3": {
                 speaker: "勇者",
-                text: "伺服器是什麼阿，NPC不是很多嗎?查一下好了",
+                text: "伺服器是什麼阿，NPC 不是很多嗎? 查一下好了。",
                 image: "pic/e_3_3.png",
                 choices: [{ text: "【下一頁】", next: "e_3_4" }]
             },
             "e_3_4": {
                 speaker: "勇者",
-                text: "人工智能你在嗎? 我問你喔，剛剛D說甚麼伺服器拆分，沒有NPC是甚麼意思",
+                text: "人工智能你在嗎? 我問你喔，剛剛朋友說什麼伺服器拆分，沒有 NPC 是什麼意思？",
                 image: "pic/e_3_3.png",
                 choices: [{ text: "【下一頁】", next: "e_3_5" }]
             },
             "e_3_5": {
                 speaker: "人工智能",
-                text: "這件事最近很火熱，是指最近因為人類的效率遠低於AI NPC太多，為了讓AI可以更高效的溝通合作工作不用考慮人類思考時間，所以特別開了一個伺服器讓AI相互溝通。",
+                text: "這件事最近很火熱，是指因為人類的效率遠低於 AI NPC 太多，為了讓 AI 可以更高效地溝通合作，不用考慮人類的思考延遲，所以特別開了一個伺服器讓 AI 相互溝通。",
                 image: "pic/e_3_5.png",
                 choices: [{ text: "【下一頁】", next: "e_3_6" }]
             },
             "e_3_6": {
                 speaker: "勇者",
-                text: "好多名詞都聽不懂",
+                text: "好多名詞都聽不懂...",
                 image: "pic/e_3_6.png",
                 choices: [
-                    { text: "NPC是甚麼", next: "c_4_a_1" },
-                    { text: "伺服器是甚麼", next: "c_4_a_2" },
-                    { text: "所以為什麼要拆分", next: "c_4_a_3" },
-                    { text: "原來如此", next: "e_4_1" }
+                    { text: "NPC 是什麼？", next: "c_4_a_1" },
+                    { text: "伺服器是什麼？", next: "c_4_a_2" },
+                    { text: "所以為什麼要拆分？", next: "c_4_a_3" },
+                    { text: "原來如此。", next: "e_4_1" }
                 ]
             },
             "c_4_a_1": {
                 speaker: "人工智能",
-                text: "NPC 是 非玩家角色的縮寫，2050開始意旨所有非實體在元宇宙中行動的AI角色，平常你在玩遊戲時的那些陪玩人物就是NPC。",
+                text: "NPC 是「非玩家角色」的縮寫。2050 年開始是指所有非實體在元宇宙中行動的 AI 角色。平常你在遊戲裡的陪玩人物就是 NPC。",
                 image: "pic/c_4_a.png",
-                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+                choices: [{ text: "【下一頁】", next: "e_4_1" }]
             },
             "c_4_a_2": {
                 speaker: "人工智能",
-                text: "伺服器就像網路世界的「大電腦」，負責存資料、處理請求、把結果傳回來。你上網、玩遊戲、看影片時，它在背後幫你完成一切。",
+                text: "伺服器就像網路世界的「大電腦」，負責存資料、處理請求、傳回結果。你上網、玩遊戲時，它都在背後運作。",
                 image: "pic/c_4_a.png",
-                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+                choices: [{ text: "【下一頁】", next: "e_4_1" }]
             },
             "c_4_a_3": {
                 speaker: "人工智能",
-                text: "這件事最近很火熱，是指最近因為人類的效率遠低於 AI NPC 太多，為了讓AI可以更高效的溝通合作工作不用考慮人類思考時間，所以特別開了一個伺服器讓AI相互溝通。",
+                text: "簡單說，AI 運算比人類快幾萬倍。把兩者放在一起，AI 必須「減速」等人類思考，這很浪費資源，所以才要拆分。",
                 image: "pic/c_4_a.png",
-                choices: [{ text: "【下一頁】", next: "e_3_6" }]
+                choices: [{ text: "【下一頁】", next: "e_4_1" }]
             },
             "e_4_1": {
-                speaker: "朋友",
-                text: "看來今天只有一個人呢",
+                speaker: "勇者",
+                text: "看來今天只有一個人呢。",
                 image: "pic/e_4_1.png",
                 choices: [{ text: "【下一頁】", next: "e_4_2" }]
             },
             "e_4_2": {
-                speaker: "朋友",
-                text: "出門吃個早餐好了，久違的出門",
+                speaker: "勇者",
+                text: "出門吃個早餐好了，久違地踏出家門。",
                 image: "pic/e_4_1.png",
                 choices: [{ text: "【下一頁】", next: "e_4_3" }]
             },
             "e_4_3": {
-                speaker: "朋友",
-                text: "阿呀!衣服怎麼都沒洗",
+                speaker: "勇者",
+                text: "阿呀！衣服怎麼都沒洗！",
                 image: "pic/e_4_3.png",
                 choices: [{ text: "【下一頁】", next: "e_4_4" }]
             },
             "e_4_4": {
-                speaker: "朋友",
-                text: "難道要繼續穿昨天的出門！！",
+                speaker: "勇者",
+                text: "難道要繼續穿昨天的出門！？",
                 image: "pic/e_4_4.png",
                 choices: [
                     { text: "繼續穿昨天的出門好了", next: "c_5_a_1" },
-                    { text: "洗個衣服好了", next: "c_5_a_2" },
+                    { text: "洗個衣服好了（等一下再出門）", next: "c_5_a_2" },
                 ]
             },
             "c_5_a_1": {
                 speaker: "人工智能",
-                text: "提醒穿髒衣服可能導致這些缺點：\n 細菌多 → 容易長痘、皮膚癢或感染 \n。 有異味 → 讓人覺得不乾淨，影響人際關係。 \n外表不整潔 → 給人懶散、不重視自己的印象......",
+                text: "提醒您，穿髒衣服可能導致細菌過多、產生異味，甚至影響人際關係。您確定要這麼做嗎？",
                 image: "pic/c_5_a_1.png",
                 choices: [{ text: "【下一頁】", next: "c_5_a_3" }]
             },
             "c_5_a_2": {
                 speaker: "勇者",
-                text: "(一個小時後)",
+                text: "（一個小時後，衣服洗好了）",
                 image: "pic/c_5_a_2.png",
                 choices: [{ text: "【下一頁】", next: "c_5_a_4" }]
             },
             "c_5_a_3": {
                 speaker: "勇者",
-                text: "我當然知道，煩死了",
+                text: "我當然知道，煩死了，別囉唆。",
                 image: "pic/e_4_1.png",
                 choices: [{ text: "【下一頁】", next: "c_5_a_4" }]
             },
             "c_5_a_4": {
                 speaker: "勇者",
-                text: "(照照鏡子)還行，出門吧",
+                text: "（照照鏡子）還行，準備出發。",
                 image: "pic/c_5_a_4.png",
-                choices: [{ text: "【下一頁】", next: "c_5_a_5" }]
+                choices: [{ text: "【下一頁】", next: "e_5_1" }]
             },
             "e_5_1": {
                 speaker: "勇者",
-                text: "今天也是沒太陽的一天，真希望哪天可以看看",
+                text: "今天也是沒太陽的一天，真希望哪天可以看看真正的陽光。",
                 image: "pic/e_5_1.png",
                 choices: [{ text: "【下一頁】", next: "e_5_2" }]
             },
             "e_5_2": {
                 speaker: "勇者",
-                text: "聽說要到農業區才有太陽可以看",
+                text: "聽說要到農業區才有太陽可以看，這裡都被高樓擋住了。",
                 image: "pic/e_5_2.png",
                 choices: [{ text: "【下一頁】", next: "e_5_3" }]
             },
             "e_5_3": {
                 speaker: "勇者",
-                text: "(往早餐店前進)",
+                text: "（往早餐店前進）",
                 image: "pic/e_5_3.png",
                 choices: [{ text: "【下一頁】", next: "e_5_4" }]
             },
             "e_5_4": {
                 speaker: "勇者",
-                text: "(路上經過一個廢棄的商圈)",
+                text: "（路上經過一個廢棄的商圈）",
                 image: "pic/e_5_4.png",
                 choices: [{ text: "【下一頁】", next: "e_5_5" }]
             },
             "e_5_5": {
                 speaker: "勇者",
-                text: "電子街? 電子是賣甚麼的阿?",
+                text: "電子街？「電子」是賣什麼的啊？",
                 image: "pic/e_5_4.png",
                 choices: [
-                    { text: "繼問問AI好了", next: "c_6_a_1" },
-                    { text: "算了先吃飯吧", next: "c_6_a_2" },
+                    { text: "繼續問問 AI 好了", next: "c_6_a_1" },
+                    { text: "算了，先吃飯吧，肚子餓了", next: "c_6_a_2" },
                 ]
             },
             "c_6_a_1": {
                 speaker: "勇者",
-                text: "喔喔~ 原來是這樣",
+                text: "喔喔～ 原來以前的人是在這裡買零件的啊。",
                 image: "pic/c_6_a_1.png",
                 choices: [{ text: "【下一頁】", next: "c_6_a_2" }]
             },
             "c_6_a_2": {
                 speaker: "勇者",
-                text: "到拉，店名叫【陽光早餐】沒有陽光的早餐點，呵呵",
+                text: "到啦，店名叫「陽光早餐」。這城市沒有陽光卻有陽光早餐，呵呵。",
                 image: "pic/c_6_a_2.png",
                 choices: [{ text: "【下一頁】", next: "c_6_a_3" }]
             },
             "c_6_a_3": {
                 speaker: "勇者",
-                text: "無人商店阿~ 進去吃吧 但我要吃甚麼呢?",
+                text: "又是無人商店啊... 進去坐吧。但我今天要吃什麼呢？",
                 image: "pic/c_6_a_3.png",
                 choices: [
-                    { text: "陽光早餐(含維生素C)", next: "c_7_a_1" },
-                    { text: "夏威夷披薩", next: "c_7_a_1" },
-                    { text: "麥片牛奶", next: "c_7_a_1" },
-                    { text: "沙拉", next: "c_7_a_1" },
-                    { text: "漢堡", next: "c_7_a_1" },
+                    { text: "特製陽光套餐（含維生素C）", next: "e_6_1" },
+                    { text: "夏威夷披薩（怎麼又是鳳梨）", next: "e_6_1" },
+                    { text: "高鈣麥片牛奶", next: "e_6_1" },
+                    { text: "水耕沙拉盆", next: "e_6_1" },
+                    { text: "合成牛肉漢堡", next: "e_6_1" },
                 ]
             },
             "e_6_1": {
                 speaker: "勇者",
-                text: "一天最重要的一餐就是早餐，哈哈",
+                text: "一天最重要的一餐就是早餐，即使是合成的味道也好。",
                 image: "pic/e_6_1.png",
                 choices: [{ text: "【下一頁】", next: "e_6_2" }]
             },
             "e_6_2": {
                 speaker: "勇者",
-                text: "這家店真冷清，大家都在M宇宙吧，那我也上線吧",
-                image: "pic/e_6_2.png",
+                text: "這家店真冷清，大家都在 M 宇宙吧...那我也準備上線吧。",
+                image: "pic/e_6_2.jpg",
                 choices: [{ text: "【下一頁】", next: "e_6_3" }]
+            },
+            "e_6_3": {
+                speaker: "勇者",
+                text: "熟悉的動畫....(打哈欠)",
+                image: "pic/e_6_3.png",
+                choices: [{ text: "【下一頁】", next: "e_6_4" }]
+            },
+            "e_6_4": {
+                speaker: "人工智能",
+                text: "請選擇進入伺服器",
+                image: "pic/e_6_4.png",
+                choices: [{ text: "【下一頁】", next: "e_6_5" }]
+            },
+            "e_6_5": {
+                speaker: "勇者",
+                text: "就跟平常一樣吧",
+                image: "pic/e_6_5.png",
+                choices: [{ text: "【下一頁】", next: "e_6_6" }]
+            },
+            "e_6_6": {
+                speaker: "人工智能",
+                text: "好的，接下來準備進入 NPC 伺服器",
+                image: "pic/e_6_5.png",
+                choices: [{ text: "【下一頁】", next: "e_6_7" }]
+            },
+            "e_6_7": {
+                speaker: "勇者",
+                text: "蛤~~！！！為啥，一定是因為今天早上朋友一直說NPC伺服器才選錯",
+                image: "pic/e_6_7.png",
+                choices: [{ text: "【下一頁】", next: "e_6_6" }]
             },
         };
 
         let typeTimer = null;
-        let currentId = "start";
+        let currentId = "start_1";
         let historyStack = [];
 
         function renderScene(id) {
             const scene = storyData[id];
             if (!scene) return;
+            
             const dialogEl = document.getElementById('dialog-text');
             const speakerEl = document.getElementById('speaker-name');
             const photoEl = document.getElementById('scene-photo');
@@ -442,12 +475,13 @@
             const infoBtn = document.getElementById('info-trigger');
             const nextBtn = document.getElementById('next-btn');
             const prevBtn = document.getElementById('prev-btn');
+            const scrollArea = document.getElementById('content-scroll-area');
 
             speakerEl.innerText = scene.speaker;
             
             if (typeTimer) clearTimeout(typeTimer);
 
-            // 更換圖片時先透明，onload 後會變回不透明 (這在 CSS 處理了)
+            // 更換圖片
             photoEl.style.opacity = 0;
             photoEl.src = scene.image;
             
@@ -458,10 +492,13 @@
                     dialogEl.innerText = scene.text.slice(0, i);
                     i++;
                     typeTimer = setTimeout(type, 30); 
+                    // 打字時保持滾動到底部
+                    scrollArea.scrollTop = scrollArea.scrollHeight;
                 }
             };
             type();
 
+            // 知識按鈕處理
             if (scene.knowledge) {
                 infoBtn.classList.remove('hidden');
                 document.getElementById('knowledge-content').innerHTML = scene.knowledge;
@@ -469,19 +506,22 @@
                 infoBtn.classList.add('hidden');
             }
 
+            // 按鈕狀態
             prevBtn.disabled = (historyStack.length === 0);
 
+            // 選項處理
             branchEl.innerHTML = "";
             if (scene.choices.length > 1) {
                 nextBtn.style.display = "none";
                 scene.choices.forEach(choice => {
                     const btn = document.createElement('button');
-                    btn.className = "choice-btn w-full py-2 px-4 rounded-md text-left text-s tracking-wide text-gray-300 hover:text-cyan-400 animate-in fade-in slide-in-from-left-2 duration-500 fill-mode-forwards";
+                    btn.className = "choice-btn w-full py-3 px-4 rounded-md text-left text-sm tracking-wide text-gray-300 hover:text-cyan-400";
                     btn.innerText = `> ${choice.text}`;
                     btn.onclick = () => {
                         historyStack.push(currentId);
                         currentId = choice.next;
                         renderScene(currentId);
+                        scrollArea.scrollTop = 0; // 切換場景後滾動回頂部
                     };
                     branchEl.appendChild(btn);
                 });
@@ -492,6 +532,7 @@
                     historyStack.push(currentId);
                     currentId = scene.choices[0].next;
                     renderScene(currentId);
+                    scrollArea.scrollTop = 0;
                 };
             }
         }
@@ -500,6 +541,7 @@
             if (historyStack.length > 0) {
                 currentId = historyStack.pop();
                 renderScene(currentId);
+                document.getElementById('content-scroll-area').scrollTop = 0;
             }
         }
 
