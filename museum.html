@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博物館</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #05070a;
+            color: #e0e6ed;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            border-radius: 1rem;
+        }
+
+        .nav-btn {
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 204, 0.1);
+            border: 1px solid rgba(0, 255, 204, 0.3);
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(0, 255, 204, 0.3);
+            border-color: rgba(0, 255, 204, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .choice-btn {
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .choice-btn:hover {
+            background: rgba(0, 255, 204, 0.1);
+            border-color: rgba(0, 255, 204, 0.5);
+            padding-left: 1.5rem;
+        }
+
+        .typing-effect::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .bg-grid {
+            background-image: linear-gradient(rgba(0, 255, 204, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        #knowledge-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(0.9);
+            opacity: 0;
+            pointer-events: none;
+        }
+        #knowledge-card.active {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 滾動條樣式優化 */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 204, 0.3);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-grid p-4">
+
+    <!-- 主遊戲容器：高度自適應，最大高度不超過螢幕 -->
+    <div id="game-viewport" class="relative w-full max-w-4xl max-h-[95vh] glass-panel overflow-hidden flex flex-col shadow-2xl">
+        
+        <!-- 頂部狀態列 -->
+        <div class="p-3 md:p-4 flex justify-between items-center border-b border-cyan-900/50 text-xs tracking-widest text-cyan-500 shrink-0">
+            <div class="flex items-center">
+                <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse mr-2"></span>
+                LOCATION: Z-CITY / DISTRICT 01
+            </div>
+            <div id="date-display">DATE: 2111.05.24</div>
+        </div>
+
+        <!-- 視覺呈現區：固定 16:9 比例 -->
+        <div class="w-full bg-black flex items-center justify-center relative overflow-hidden shrink-0">
+            <div class="w-full aspect-video relative">
+                <img id="scene-photo" class="w-full h-full object-cover opacity-0 transition-opacity duration-700" src="" alt="場景圖" onload="this.style.opacity=1">
+                
+                <!-- 知識按鈕：改到圖片角落 -->
+                <button id="info-trigger" class="hidden absolute top-4 right-4 w-10 h-10 rounded-full bg-yellow-500/20 border-2 border-yellow-500 flex items-center justify-center text-yellow-500 animate-bounce cursor-pointer z-10 hover:bg-yellow-500 hover:text-black transition-all" onclick="toggleKnowledge()">
+                    <span class="font-bold text-sm">i</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 對話區域：具備滾動功能 -->
+        <div class="flex-grow flex flex-col p-6 md:p-8 bg-black/85 border-t border-cyan-900/40 min-h-0">
+            <div id="speaker-name" class="text-cyan-400 font-bold mb-2 tracking-[0.2em] text-xs uppercase opacity-70 shrink-0">SYSTEM MESSAGE</div>
+            
+            <!-- 文字內容容器：在 iPad 上若內容過多可滾動 -->
+            <div id="content-scroll-area" class="flex-grow overflow-y-auto pr-2 custom-scroll mb-4">
+                <div id="dialog-text" class="text-lg md:text-xl leading-relaxed mb-4 typing-effect text-gray-100"></div>
+                
+                <!-- 分歧選擇區 -->
+                <div id="branch-container" class="flex flex-col gap-3"></div>
+            </div>
+
+            <!-- 導覽按鈕區：固定在底部 -->
+            <div class="mt-auto flex gap-4 pt-4 border-t border-white/5 shrink-0">
+                <button id="prev-btn" class="nav-btn flex-1 py-3 px-4 rounded-lg text-center text-sm font-bold tracking-widest text-gray-400 uppercase" onclick="goBack()">
+                    ← 上一頁
+                </button>
+                <button id="next-btn" class="nav-btn flex-[2] py-3 px-4 rounded-lg text-center text-sm font-bold tracking-widest text-cyan-400 uppercase">
+                    下一頁 →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 知識卡片彈窗 -->
+    <div id="knowledge-card" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div class="max-w-md w-full glass-panel p-6 md:p-8 relative border-yellow-500/50 border-2 shadow-[0_0_50px_rgba(234,179,8,0.2)]">
+            <button class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onclick="toggleKnowledge()">✕</button>
+            <h3 class="text-yellow-500 font-bold text-xl md:text-2xl mb-6 flex items-center">
+                <span class="mr-3">💡</span> 未來技術筆記
+            </h3>
+            <div id="knowledge-content" class="text-gray-200 text-sm md:text-base leading-loose mb-8"></div>
+            <button class="w-full py-3 bg-yellow-500 text-black font-bold hover:bg-yellow-400 transition-colors rounded-lg uppercase tracking-widest" onclick="toggleKnowledge()">確認理解</button>
+        </div>
+    </div>
+
+    <script>
+        // 保持原本的資料結構
+        const storyData = {
+            "e_1_1": {
+                speaker: "梅林",
+                text: "歡迎來到數位王國的博物館，它叫做晶圓博物館。",
+                image: "pic/museum/e_1/e_1_1.png",
+                choices: [{ text: "下一頁】", next: "e_1_2" }]
+            },
+            "e_1_2": {
+                speaker: "勇者",
+                text: "哇……看起來很壯觀耶！",
+                image: "pic/museum/e_1/e_1_2.png",
+                choices: [{ text: "下一頁】", next: "e_1_3" }]
+            },
+            "e_1_3": {
+                speaker: "梅林",
+                text: "這裡記錄了人類的最偉大的智慧結晶……半導體",
+                image: "pic/museum/e_1/e_1_1.png",
+                choices: [{ text: "下一頁】", next: "e_1_4" }]
+            },
+            "e_1_4": {
+                speaker: "勇者",
+                text: "等一下等一下！半導體？那不是手機裡面那個小小的晶片而已嗎？怎麼會是『最偉大』啊？",
+                image: "pic/museum/e_1/e_1_2.png",
+                choices: [{ text: "下一頁】", next: "e_1_5" }]
+            },
+            "e_1_5": {
+                speaker: "梅林",
+                text: "你知道一公分是多長嗎?",
+                image: "pic/museum/e_1/e_1_1.png",
+                choices: [
+                    { text: "算力礦坑 運算邏輯", next: "c_1_a_1" },
+                    { text: "博物館 (介紹半導體製程)", next: "index.html", type: "link"},
+                    { text: "數理學院(介紹電流與訊號電晶體介紹)", next: "c_1_a_1" },
+                    { text: "彼特幣挖礦場(做題目來獲得提示積分)", next: "c_1_b_1" },
+                    { text: "商店", next: "c_1_a_1" },
+                ]
+            },
+            
+        };
+
+        let typeTimer = null;
+        let currentId = "e_1_1";
+        let historyStack = [];
+
+        function renderScene(id) {
+            const scene = storyData[id];
+            if (!scene) return;
+            
+            const dialogEl = document.getElementById('dialog-text');
+            const speakerEl = document.getElementById('speaker-name');
+            const photoEl = document.getElementById('scene-photo');
+            const branchEl = document.getElementById('branch-container');
+            const infoBtn = document.getElementById('info-trigger');
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const scrollArea = document.getElementById('content-scroll-area');
+
+            speakerEl.innerText = scene.speaker;
+            
+            if (typeTimer) clearTimeout(typeTimer);
+
+            // 更換圖片
+            photoEl.style.opacity = 0;
+            photoEl.src = scene.image;
+            
+            dialogEl.innerText = "";
+            let i = 0;
+            const type = () => {
+                if (i <= scene.text.length) {
+                    dialogEl.innerText = scene.text.slice(0, i);
+                    i++;
+                    typeTimer = setTimeout(type, 30); 
+                    // 打字時保持滾動到底部
+                    scrollArea.scrollTop = scrollArea.scrollHeight;
+                }
+            };
+            type();
+
+            // 知識按鈕處理
+            if (scene.knowledge) {
+                infoBtn.classList.remove('hidden');
+                document.getElementById('knowledge-content').innerHTML = scene.knowledge;
+            } else {
+                infoBtn.classList.add('hidden');
+            }
+
+            // 按鈕狀態
+            prevBtn.disabled = (historyStack.length === 0);
+
+            // 選項處理
+            branchEl.innerHTML = "";
+            if (scene.choices.length > 1) {
+                nextBtn.style.display = "none";
+                scene.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = "choice-btn w-full py-3 px-4 rounded-md text-left text-sm tracking-wide text-gray-300 hover:text-cyan-400";
+                    btn.innerText = `> ${choice.text}`;
+                    btn.onclick = () => {
+                        historyStack.push(currentId);
+                        currentId = choice.next;
+                        renderScene(currentId);
+                        scrollArea.scrollTop = 0; // 切換場景後滾動回頂部
+                    };
+                    branchEl.appendChild(btn);
+                });
+            } else {
+                nextBtn.style.display = "block";
+                nextBtn.innerText = scene.choices[0].text.includes("【下一頁】") ? "下一頁 →" : scene.choices[0].text + " →";
+                nextBtn.onclick = () => {
+                    historyStack.push(currentId);
+                    currentId = scene.choices[0].next;
+                    renderScene(currentId);
+                    scrollArea.scrollTop = 0;
+                };
+            }
+        }
+
+        function goBack() {
+            if (historyStack.length > 0) {
+                currentId = historyStack.pop();
+                renderScene(currentId);
+                document.getElementById('content-scroll-area').scrollTop = 0;
+            }
+        }
+
+        function toggleKnowledge() {
+            document.getElementById('knowledge-card').classList.toggle('active');
+        }
+
+        function handleChoice(choice) {
+            if (choice.type === "link") {
+                window.location.href = choice.next; // 執行 HTML 跳轉
+            } else {
+                goToScene(choice.next); // 執行你原本的邏輯跳轉
+            }
+        }
+
+        window.onload = () => {
+            renderScene("e_1_1");
+            const now = new Date();
+            document.getElementById('date-display').innerText = `DATE: 2111.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
+        };
+    </script>
+</body>
+</html>
