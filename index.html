@@ -1,858 +1,1759 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2111：晶片冒險記 - 第一章</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
-        
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #05070a;
-            color: #e0e6ed;
-            overflow: hidden;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>2111：晶片冒險記 - 第一章</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #05070a;
+    --panel: rgba(9, 14, 24, 0.92);
+    --line: rgba(0, 255, 204, 0.18);
+    --cyan: #00ffcc;
+    --text: #e0e6ed;
+    --muted: #8a97a8;
+    --gold: #facc15;
+    --merlin: #c084fc;
+    --thought: #f8fafc;
+    --danger: #f87171;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+    margin: 0;
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    background-image: linear-gradient(rgba(0, 255, 204, 0.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0, 255, 204, 0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+    color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    user-select: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
 
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 255, 204, 0.2);
-            border-radius: 1rem;
-        }
+#app {
+    width: 100%; max-width: 980px; max-height: 100dvh;
+    display: flex; flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+@media (max-width: 640px) { #app { border-radius: 0; border: 0; height: 100dvh; } }
 
-        .nav-btn {
-            transition: all 0.3s ease;
-            background: rgba(0, 255, 204, 0.1);
-            border: 1px solid rgba(0, 255, 204, 0.3);
-        }
+/* ===== HUD ===== */
+#hud {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px; font-size: 12px; letter-spacing: 0.08em;
+    color: var(--cyan); border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+#loc { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#loc::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; flex-shrink: 0; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+.hud-btn { background: none; border: 0; padding: 4px 2px; color: var(--cyan); font-size: 13px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.hud-btn:hover { color: #fff; }
+#coin-hud { color: var(--gold); }
+#coin-hud.pop { animation: coinPop 0.6s ease; }
+@keyframes coinPop { 40% { transform: scale(1.5); color: #fff; } }
+#logout-btn { color: var(--danger); display: none; }
+#date { color: var(--muted); }
+@media (max-width: 640px) { #date { display: none; } #hud { gap: 10px; } }
 
-        .nav-btn:hover:not(:disabled) {
-            background: rgba(0, 255, 204, 0.3);
-            border-color: rgba(0, 255, 204, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
-        }
+/* ===== 舞台 ===== */
+#stage {
+    position: relative; width: 100%; aspect-ratio: 16 / 9;
+    overflow: hidden; flex-shrink: 0; background: #000; cursor: pointer;
+}
+@media (max-aspect-ratio: 1/1) { #stage { aspect-ratio: 1 / 1; max-height: 62dvh; } }
+#stage > * { position: absolute; inset: 0; }
+#base { transition: background 1.2s ease; }
+#scene-img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.8s ease, filter 1s ease; }
+#fxc { pointer-events: none; }
+#light { pointer-events: none; transition: background 1.4s ease; }
+#sunglow { pointer-events: none; opacity: 0; transition: opacity 2s ease;
+    background: radial-gradient(circle at 78% 8%, rgba(255, 240, 190, 0.55), rgba(255, 210, 120, 0.12) 35%, transparent 60%);
+    mix-blend-mode: screen; }
+#exposure { pointer-events: none; background: #fffbea; opacity: 0; }
+#lids { pointer-events: none; }
+#lids div { position: absolute; left: -5%; width: 110%; height: 0; background: #000; transition: height 0.35s ease; }
+#lids .t { top: 0; border-radius: 0 0 50% 50% / 0 0 30% 30%; }
+#lids .b { bottom: 0; border-radius: 50% 50% 0 0 / 30% 30% 0 0; }
+#ix { pointer-events: none; }
+#ix > * { pointer-events: auto; }
+#flash { pointer-events: none; opacity: 0; background: #fff; }
+#flash.go { animation: flash 1.3s ease-out; }
+@keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+#veil { pointer-events: none; background: #000; opacity: 0; transition: opacity 0.6s ease;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; letter-spacing: 0.3em; color: var(--muted); }
+#veil.on { opacity: 1; }
 
-        .nav-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
+/* 畫面特效 */
+.shake { animation: shake 0.5s ease; }
+@keyframes shake {
+    20% { transform: translate(-8px, 4px); } 40% { transform: translate(8px, -4px); }
+    60% { transform: translate(-5px, -2px); } 80% { transform: translate(5px, 2px); }
+}
+#glitch { pointer-events: none; opacity: 0;
+    background: repeating-linear-gradient(0deg, rgba(0, 255, 204, 0.18) 0 2px, transparent 2px 7px); }
+#stage.glitching #glitch { animation: glitchBars 0.9s steps(6) ; }
+#stage.glitching #scene-img { animation: glitchImg 0.9s steps(5); }
+@keyframes glitchBars { 0%, 100% { opacity: 0; } 20%, 60% { opacity: 1; transform: translateY(-6px); } 40%, 80% { opacity: 0.6; transform: translateY(5px); } }
+@keyframes glitchImg {
+    0% { filter: hue-rotate(0); transform: none; }
+    25% { filter: hue-rotate(90deg) saturate(3); transform: translateX(-10px) skewX(6deg); }
+    50% { filter: invert(0.8); transform: translateX(8px); clip-path: inset(20% 0 30% 0); }
+    75% { filter: hue-rotate(-60deg) contrast(2); transform: translateX(-4px) skewX(-4deg); clip-path: none; }
+    100% { filter: none; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .shake, #stage.glitching #glitch, #stage.glitching #scene-img, #flash.go { animation: none !important; }
+}
 
-        .choice-btn {
-            transition: all 0.2s ease;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+/* ===== AR 標籤（可點的場景物件） ===== */
+.tag {
+    position: absolute; transform: translate(-50%, -50%);
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px 7px 9px; border-radius: 999px;
+    background: rgba(5, 12, 20, 0.62); border: 1px solid rgba(0, 255, 204, 0.55);
+    color: #dffcf6; font-size: 13px; white-space: nowrap;
+    backdrop-filter: blur(4px); transition: transform 0.15s ease, background 0.15s ease;
+}
+.tag:hover { background: rgba(0, 255, 204, 0.2); transform: translate(-50%, -50%) scale(1.06); }
+.tag .dot { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; }
+.tag .dot::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--cyan); animation: ring 1.6s ease-out infinite; }
+@keyframes ring { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+.tag.gold { border-color: rgba(250, 204, 21, 0.7); color: #fff7d6; }
+.tag.gold .dot, .tag.gold .dot::after { background: var(--gold); border-color: var(--gold); }
+.tag.gold .dot::after { background: none; }
+.tag.red { border-color: rgba(248, 113, 113, 0.7); }
+.tag.red .dot { background: var(--danger); } .tag.red .dot::after { border-color: var(--danger); }
+.tag.flicker { animation: flicker 3s infinite; }
+@keyframes flicker { 0%, 100% { opacity: 1; } 47% { opacity: 1; } 48% { opacity: 0.2; } 50% { opacity: 1; } 52% { opacity: 0.3; } 53% { opacity: 1; } }
+.tag.prop { border-color: rgba(255, 255, 255, 0.28); color: #cbd5e1; font-size: 12px; padding: 5px 10px 5px 8px; }
+.tag.prop .dot { width: 7px; height: 7px; background: #cbd5e1; }
+.tag.prop .dot::after { border-color: #cbd5e1; animation-duration: 2.6s; }
 
-        .choice-btn:hover {
-            background: rgba(0, 255, 204, 0.1);
-            border-color: rgba(0, 255, 204, 0.5);
-            padding-left: 1.5rem;
-        }
+/* ===== 全息面板 ===== */
+.holo {
+    position: absolute; padding: 14px 16px; border-radius: 12px;
+    background: linear-gradient(180deg, rgba(0, 40, 48, 0.78), rgba(0, 20, 28, 0.82));
+    border: 1px solid rgba(0, 255, 204, 0.5);
+    box-shadow: 0 0 30px rgba(0, 255, 204, 0.18), inset 0 0 20px rgba(0, 255, 204, 0.06);
+    backdrop-filter: blur(6px); color: #dffcf6;
+    animation: holoIn 0.35s ease-out;
+}
+.holo::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 4px); }
+@keyframes holoIn { from { opacity: 0; scale: 1 0.05; } to { opacity: 1; scale: 1 1; } }
+@keyframes fadeIn { from { opacity: 0; } }
+.holo { max-height: 96%; overflow-y: auto; }
+@media (max-width: 640px) { .holo .tt { display: none; } .holo { padding: 10px 12px; } .holo h4 { margin-bottom: 3px; } }
+.holo h4 { margin: 0 0 6px; font-size: 13px; color: var(--cyan); font-weight: 700; letter-spacing: 0.06em; }
+.holo .big { font-size: clamp(26px, 6vw, 44px); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.hbtn {
+    border: 1px solid rgba(0, 255, 204, 0.5); background: rgba(0, 255, 204, 0.08);
+    color: #dffcf6; border-radius: 8px; padding: 9px 12px; font-weight: 700;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+.hbtn:hover:not(:disabled) { background: rgba(0, 255, 204, 0.25); }
+.hbtn:active:not(:disabled) { transform: scale(0.96); }
+.hbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.hbtn.on { background: var(--cyan); color: #00201a; }
+.hbtn.right { background: rgba(16, 185, 129, 0.55); border-color: #34d399; color: #fff; }
+.hbtn.wrong { background: rgba(239, 68, 68, 0.5); border-color: #f87171; color: #fff; }
+.hbtn.gold { background: var(--gold); color: #1a1300; border-color: var(--gold); }
 
-        .typing-effect::after {
-            content: '|';
-            animation: blink 1s infinite;
-        }
+/* 二進位燈泡 */
+.bits { display: grid; grid-template-columns: repeat(8, 1fr); gap: clamp(4px, 1.2vw, 10px); }
+.bitb { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; }
+.bitb .bulb { width: clamp(28px, 7vw, 52px); aspect-ratio: 1; border-radius: 50%;
+    border: 2px solid #335; background: #0b1220; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; color: #475569; transition: all 0.12s ease; font-size: clamp(12px, 2.6vw, 18px); }
+.bitb.on .bulb { background: #fde047; border-color: #fde047; color: #1a1300; box-shadow: 0 0 22px rgba(253, 224, 71, 0.9); }
+.bitb .w { font-size: 10px; color: #7dd3c0; font-variant-numeric: tabular-nums; }
+.decoded { position: absolute; left: 50%; top: 78%; transform: translate(-50%, -50%);
+    font-size: clamp(60px, 16vw, 140px); font-weight: 900; color: #fde047; letter-spacing: 0.1em;
+    text-shadow: 0 0 30px rgba(253, 224, 71, 0.9), 0 0 80px rgba(253, 224, 71, 0.5); pointer-events: none;
+    animation: popIn 0.4s ease-out; }
+@keyframes popIn { from { transform: translate(-50%, -50%) scale(2.2); opacity: 0; } }
 
-        @keyframes blink { 50% { opacity: 0; } }
+/* 礦坑 */
+.lever { width: 54px; height: 30px; border-radius: 999px; background: #1e293b; border: 2px solid #475569; position: relative; padding: 0; transition: all 0.2s; }
+.lever::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #64748b; transition: all 0.2s; }
+.lever.on { background: rgba(0, 255, 204, 0.3); border-color: var(--cyan); }
+.lever.on::after { left: 27px; background: var(--cyan); }
+.lamp { width: clamp(52px, 10vw, 84px); aspect-ratio: 1; border-radius: 50%; border: 3px solid #334155; background: #0b1220;
+    display: flex; align-items: center; justify-content: center; font-size: clamp(22px, 5vw, 36px); filter: grayscale(1); opacity: 0.6; transition: all 0.25s; }
+.lamp.on { background: #fde047; border-color: #fde047; box-shadow: 0 0 50px rgba(253, 224, 71, 0.95); filter: none; opacity: 1; }
+.slot { min-width: 76px; padding: 10px 8px; border: 2px dashed #64748b; border-radius: 8px; text-align: center; font-weight: 900; }
+.slot.filled { border-style: solid; border-color: var(--cyan); color: var(--cyan); }
+.tt { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; font-size: 11px; text-align: center; color: #94a3b8; }
+.tt div { border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 3px 0; }
+.tt .cur { border-color: var(--cyan); color: #fff; }
 
-        .bg-grid {
-            background-image: linear-gradient(rgba(0, 255, 204, 0.05) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
+/* 礦石 */
+.rock {
+    position: absolute; transform: translate(-50%, -50%);
+    padding: 12px 16px; max-width: 44%; min-width: 90px; text-align: center; font-weight: 700; font-size: 14px; line-height: 1.4;
+    background: linear-gradient(145deg, #57534e, #292524); color: #f5f5f4;
+    border: 2px solid #78716c; border-radius: 38% 62% 44% 56% / 52% 40% 60% 48%;
+    box-shadow: inset -6px -8px 0 rgba(0, 0, 0, 0.3), 0 8px 18px rgba(0, 0, 0, 0.5);
+    transition: transform 0.12s ease;
+}
+.rock:hover { transform: translate(-50%, -50%) scale(1.05); }
+.rock.hit { animation: hit 0.25s ease; }
+@keyframes hit { 50% { transform: translate(-50%, -50%) rotate(-6deg) scale(0.94); } }
+.rock.gem { background: linear-gradient(145deg, #fde047, #ca8a04); color: #1a1300; border-color: #fef08a; box-shadow: 0 0 30px rgba(253, 224, 71, 0.8); }
+.rock.dud { opacity: 0.35; }
+.coinpop { position: absolute; font-size: 28px; pointer-events: none; animation: coinUp 0.9s ease-out forwards; }
+@keyframes coinUp { to { transform: translateY(-70px); opacity: 0; } }
+.fuel { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.fuel > div { height: 100%; background: var(--gold); transition: width 0.1s linear; }
 
-        #knowledge-card {
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: scale(0.9);
-            opacity: 0;
-            pointer-events: none;
-        }
-        #knowledge-card.active {
-            transform: scale(1);
-            opacity: 1;
-            pointer-events: auto;
-        }
+/* 地圖 */
+.mapnode { position: absolute; transform: translate(-50%, -50%); background: none; border: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; color: #dffcf6; font-size: 12px; font-weight: 700; }
+.mapnode .gem { width: 22px; height: 22px; transform: rotate(45deg); border: 2px solid var(--cyan); background: rgba(0, 255, 204, 0.18);
+    box-shadow: 0 0 16px rgba(0, 255, 204, 0.6); transition: all 0.15s; }
+.mapnode:hover .gem { background: var(--cyan); }
+.mapnode.done .gem { border-color: var(--gold); background: rgba(250, 204, 21, 0.3); box-shadow: 0 0 16px rgba(250, 204, 21, 0.6); }
+.mapnode.locked { opacity: 0.45; }
+.mapnode span { background: rgba(0, 10, 16, 0.7); padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
 
-        /* 滾動條樣式優化 */
-        .custom-scroll::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: rgba(0, 255, 204, 0.3);
-            border-radius: 10px;
-        }
-    </style>
+/* 商品 */
+.ware { position: absolute; transform: translate(-50%, -50%); width: 30%; max-width: 220px; text-align: center; }
+.ware .icon { font-size: clamp(30px, 7vw, 54px); filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)); }
+.ware .pricetag { display: inline-block; margin-top: 4px; }
+.ware.sold { opacity: 0.35; }
+
+/* 手機 */
+.phone { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(260px, 70%); text-align: center; animation: holoIn 0.3s ease-out, buzz 0.5s 0.4s infinite; }
+@keyframes buzz { 0%, 100% { margin-left: 0; } 25% { margin-left: -3px; } 75% { margin-left: 3px; } }
+.phone .avatar { width: 54px; height: 54px; margin: 4px auto 8px; border-radius: 50%; background: linear-gradient(135deg, #fb923c, #c2410c);
+    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: #fff; }
+
+/* 伺服器入口 */
+.portal { position: absolute; top: 50%; width: 38%; transform: translateY(-50%); text-align: left; padding: 16px; }
+.portal:hover { box-shadow: 0 0 40px rgba(0, 255, 204, 0.45); }
+.portal .name { font-size: clamp(15px, 2.6vw, 20px); font-weight: 900; margin: 2px 0 8px; }
+.portal .meta { font-size: 11px; color: #9be9d8; line-height: 1.7; font-variant-numeric: tabular-nums; }
+
+/* ===== 夥伴（人工智能 / 梅林）與泡泡 ===== */
+#buddy {
+    inset: auto; right: 4%; bottom: 8%; width: clamp(40px, 7vw, 56px); height: clamp(40px, 7vw, 56px);
+    border-radius: 50%; border: 0; padding: 0; display: none; z-index: 5;
+    animation: float 4s ease-in-out infinite;
+}
+#buddy.ai { background: radial-gradient(circle at 35% 30%, #b8fff0, #00c9a7 45%, #00473c); box-shadow: 0 0 28px rgba(0, 255, 204, 0.75); }
+#buddy.merlin { background: radial-gradient(circle at 35% 30%, #f3e8ff, #a855f7 45%, #3b0764); box-shadow: 0 0 28px rgba(192, 132, 252, 0.85); }
+#buddy .eyes { position: absolute; left: 26%; right: 26%; top: 40%; display: flex; justify-content: space-between; }
+#buddy .eyes i { width: 18%; aspect-ratio: 1 / 1.5; min-width: 5px; background: #001a14; border-radius: 50%; animation: blink 5s infinite; }
+#buddy.merlin .eyes i { background: #1e0436; }
+#buddy.talk { animation: float 4s ease-in-out infinite, talk 0.25s ease-in-out infinite; }
+@keyframes float { 50% { translate: 0 -8px; } }
+@keyframes talk { 50% { scale: 1.08; } }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+#bubble {
+    inset: auto; right: 4%; bottom: calc(8% + clamp(48px, 8vw, 66px)); max-width: min(330px, 70%);
+    padding: 9px 13px; border-radius: 12px 12px 4px 12px; font-size: 14px; line-height: 1.6;
+    background: rgba(8, 12, 22, 0.88); border: 1px solid rgba(255, 255, 255, 0.18);
+    opacity: 0; transform: translateY(6px); transition: opacity 0.25s ease, transform 0.25s ease; pointer-events: none; z-index: 6;
+}
+#bubble.show { opacity: 1; transform: none; }
+#bubble.left { right: auto; left: 4%; bottom: 8%; border-radius: 12px 12px 12px 4px; }
+#bubble b { display: block; font-size: 11px; margin-bottom: 2px; letter-spacing: 0.1em; }
+
+/* AR 通知 */
+#toasts { inset: auto; left: 3%; top: 4%; display: flex; flex-direction: column; gap: 6px; pointer-events: none; z-index: 7; }
+.toast { padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    background: rgba(8, 12, 22, 0.85); border-left: 3px solid var(--gold); color: #fff7d6; animation: toastIn 0.3s ease-out; }
+.toast.card { border-left-color: var(--cyan); color: #dffcf6; }
+.toast.out { opacity: 0; transition: opacity 0.4s; }
+@keyframes toastIn { from { transform: translateX(-20px); opacity: 0; } }
+
+/* ===== 對話框 ===== */
+#dialog { flex: 1; min-height: 150px; display: flex; flex-direction: column; padding: 14px 20px 14px; border-top: 1px solid var(--line); position: relative; overflow: hidden; cursor: pointer; }
+#speaker { font-size: 12px; font-weight: 700; letter-spacing: 0.2em; margin-bottom: 6px; min-height: 18px; }
+#text-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+#text { font-size: clamp(16px, 2.2vw, 20px); line-height: 1.75; white-space: pre-wrap; min-height: 1.75em; }
+#text.thinking { color: #cbd5e1; }
+#more { position: absolute; right: 18px; bottom: 12px; color: var(--cyan); font-size: 12px; opacity: 0; animation: bob 1s ease-in-out infinite; }
+#more.on { opacity: 0.85; }
+@keyframes bob { 50% { transform: translateY(4px); } }
+#hint { font-size: 12px; color: #7dd3c0; margin-top: 6px; min-height: 18px; letter-spacing: 0.04em; }
+#hint:not(:empty)::before { content: '◇ '; }
+#choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.choice { padding: 9px 14px; font-size: 15px; text-align: left; transition: all 0.15s ease; animation: choiceIn 0.3s ease-out backwards; }
+@keyframes choiceIn { from { opacity: 0; transform: translateY(6px); } }
+.choice.thought { background: rgba(248, 250, 252, 0.06); border: 1px dashed rgba(248, 250, 252, 0.35); border-radius: 18px; color: var(--thought); }
+.choice.thought:hover { background: rgba(248, 250, 252, 0.14); }
+.choice.holo-c { background: rgba(0, 255, 204, 0.07); border: 1px solid rgba(0, 255, 204, 0.45); border-radius: 6px; color: #dffcf6; box-shadow: 0 0 14px rgba(0, 255, 204, 0.12); }
+.choice.holo-c:hover { background: rgba(0, 255, 204, 0.2); }
+.choice .k { opacity: 0.5; margin-right: 6px; font-size: 12px; }
+#name-row { display: flex; gap: 8px; margin-top: 10px; }
+#name-input { flex: 1; min-width: 0; background: rgba(0, 0, 0, 0.5); border: 1px solid var(--merlin); color: #fff; border-radius: 8px; padding: 10px 12px; font: inherit; font-size: 17px; outline: none; }
+#name-input:focus { box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.3); }
+
+/* ===== 疊加面板（圖鑑、背包、日記、開場） ===== */
+#sheet { position: absolute; inset: 0; z-index: 20; background: rgba(2, 4, 8, 0.86); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 16px; }
+#sheet.open { display: flex; }
+#sheet .inner { width: 100%; max-width: 460px; max-height: 92%; overflow-y: auto; padding: 22px; border-radius: 14px;
+    background: var(--panel); border: 1px solid var(--line); }
+#sheet h3 { margin: 0 0 4px; color: var(--gold); font-size: 20px; }
+#sheet .sub { color: var(--muted); font-size: 13px; line-height: 1.7; margin-bottom: 14px; }
+.cardrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.dex { border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 8px; padding: 10px; text-align: left; background: none; }
+.dex.locked { border-style: dashed; border-color: #334155; color: #475569; cursor: default; }
+.dex b { display: block; color: #9be9d8; font-size: 14px; }
+.dex small { color: var(--muted); font-size: 11px; }
+.cardbody { line-height: 1.85; font-size: 15px; margin-bottom: 16px; }
+.diary { background: #f5efe0; color: #3b2f1e; padding: 18px; border-radius: 6px; line-height: 2; font-size: 15px;
+    background-image: repeating-linear-gradient(transparent 0 31px, rgba(59, 47, 30, 0.12) 31px 32px); margin-bottom: 14px; }
+.bagitem { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
+
+#title { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 24px;
+    background: radial-gradient(ellipse at 50% 120%, rgba(0, 255, 204, 0.18), transparent 60%), #03050a; }
+#title .yr { font-size: clamp(64px, 16vw, 128px); font-weight: 900; line-height: 1; color: transparent; -webkit-text-stroke: 1.5px var(--cyan); letter-spacing: 0.06em; }
+#title .nm { font-size: clamp(20px, 4vw, 30px); font-weight: 900; letter-spacing: 0.3em; }
+#title .ch { color: var(--muted); font-size: 13px; letter-spacing: 0.2em; margin-bottom: 18px; }
+#title .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+#title .note { margin-top: 18px; color: #64748b; font-size: 12px; }
+#title.hide { opacity: 0; pointer-events: none; transition: opacity 1s; }
+</style>
 </head>
-<body class="bg-grid p-4">
-
-    <!-- 主遊戲容器：高度自適應，最大高度不超過螢幕 -->
-    <div id="game-viewport" class="relative w-full max-w-4xl max-h-[95vh] glass-panel overflow-hidden flex flex-col shadow-2xl">
-        
-        <!-- 頂部狀態列 -->
-        <div class="p-3 md:p-4 flex justify-between items-center border-b border-cyan-900/50 text-xs tracking-widest text-cyan-500 shrink-0">
-            <div class="flex items-center">
-                <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse mr-2"></span>
-                LOCATION: Z-CITY / DISTRICT 01
-            </div>
-            <div id="date-display">DATE: 2111.05.24</div>
-        </div>
-
-        <!-- 視覺呈現區：固定 16:9 比例 -->
-        <div class="w-full bg-black flex items-center justify-center relative overflow-hidden shrink-0">
-            <div class="w-full aspect-video relative">
-                <img id="scene-photo" class="w-full h-full object-cover opacity-0 transition-opacity duration-700" src="" alt="場景圖" onload="this.style.opacity=1">
-                
-                <!-- 知識按鈕：改到圖片角落 -->
-                <button id="info-trigger" class="hidden absolute top-4 right-4 w-10 h-10 rounded-full bg-yellow-500/20 border-2 border-yellow-500 flex items-center justify-center text-yellow-500 animate-bounce cursor-pointer z-10 hover:bg-yellow-500 hover:text-black transition-all" onclick="toggleKnowledge()">
-                    <span class="font-bold text-sm">i</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- 對話區域：具備滾動功能 -->
-        <div class="flex-grow flex flex-col p-6 md:p-8 bg-black/85 border-t border-cyan-900/40 min-h-0">
-            <div id="speaker-name" class="text-cyan-400 font-bold mb-2 tracking-[0.2em] text-xs uppercase opacity-70 shrink-0">SYSTEM MESSAGE</div>
-            
-            <!-- 文字內容容器：在 iPad 上若內容過多可滾動 -->
-            <div id="content-scroll-area" class="flex-grow overflow-y-auto pr-2 custom-scroll mb-4">
-                <div id="dialog-text" class="text-lg md:text-xl leading-relaxed mb-4 typing-effect text-gray-100"></div>
-                
-                <!-- 分歧選擇區 -->
-                <div id="branch-container" class="flex flex-col gap-3"></div>
-            </div>
-
-            <!-- 導覽按鈕區：固定在底部 -->
-            <div class="mt-auto flex gap-4 pt-4 border-t border-white/5 shrink-0">
-                <button id="prev-btn" class="nav-btn flex-1 py-3 px-4 rounded-lg text-center text-sm font-bold tracking-widest text-gray-400 uppercase" onclick="goBack()">
-                    ← 上一頁
-                </button>
-                <button id="next-btn" class="nav-btn flex-[2] py-3 px-4 rounded-lg text-center text-sm font-bold tracking-widest text-cyan-400 uppercase">
-                    下一頁 →
-                </button>
-            </div>
-        </div>
+<body>
+<div id="app">
+    <div id="hud">
+        <div id="loc">Z市 · 自宅</div>
+        <button class="hud-btn" id="logout-btn" title="登出">⏏ 登出</button>
+        <button class="hud-btn" id="coin-hud" title="彼特幣">🪙 <span id="coin-n">0</span></button>
+        <button class="hud-btn" id="bag-btn" title="背包">🎒 <span id="bag-n">0</span></button>
+        <button class="hud-btn" id="dex-btn" title="掃描紀錄">📖 <span id="dex-n">0/7</span></button>
+        <button class="hud-btn" id="snd-btn" title="聲音 (M)">🔊</button>
+        <div id="date">2111.05.24</div>
     </div>
 
-    <!-- 知識卡片彈窗 -->
-    <div id="knowledge-card" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-        <div class="max-w-md w-full glass-panel p-6 md:p-8 relative border-yellow-500/50 border-2 shadow-[0_0_50px_rgba(234,179,8,0.2)]">
-            <button class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onclick="toggleKnowledge()">✕</button>
-            <h3 class="text-yellow-500 font-bold text-xl md:text-2xl mb-6 flex items-center">
-                <span class="mr-3">💡</span> 未來技術筆記
-            </h3>
-            <div id="knowledge-content" class="text-gray-200 text-sm md:text-base leading-loose mb-8"></div>
-            <button class="w-full py-3 bg-yellow-500 text-black font-bold hover:bg-yellow-400 transition-colors rounded-lg uppercase tracking-widest" onclick="toggleKnowledge()">確認理解</button>
-        </div>
+    <div id="stage">
+        <div id="base"></div>
+        <img id="scene-img" alt="" onload="this.style.opacity=1" onerror="this.style.opacity=0">
+        <canvas id="fxc"></canvas>
+        <div id="light"></div>
+        <div id="sunglow"></div>
+        <div id="glitch"></div>
+        <div id="ix"></div>
+        <div id="exposure"></div>
+        <div id="lids"><div class="t"></div><div class="b"></div></div>
+        <div id="toasts"></div>
+        <div id="bubble"></div>
+        <button id="buddy" aria-label="夥伴"><div class="eyes"><i></i><i></i></div></button>
+        <div id="flash"></div>
+        <div id="veil"></div>
     </div>
 
-    <script>
-        // 保持原本的資料結構
-        const storyData = {
-            "start_1": {
-                speaker: "人工智能",
-                text: "早安阿 ~ 又是美好的一天。",
-                image: "pic/main/start_1.png", 
-                choices: [{ text: "【下一頁】", next: "wake_1" }]
-            },
-            "wake_1": {
-                speaker: "勇者",
-                text: "（伸了個懶腰）...唔... 還是好睏啊。",
-                image: "pic/main/wake_1.png",
-                choices: [{ text: "【下一頁】", next: "wake_2" }]
-            },
-            "wake_2": {
-                speaker: "人工智能",
-                text: "趕快起床啦！太陽都要曬屁股了！快點準備登入系統！",
-                image: "pic/main/wake_2.png",
-                choices: [{ text: "【下一頁】", next: "morning_news" }]
-            },
-            "morning_news": {
-                speaker: "人工智能",
-                text: "今天早上【宇宙太陽能板】會經過【Z市】上方，建議出門前吃維生素C避免營養不良，地表天氣預報顯示今日乾爽...",
-                image: "pic/main/morning_news.png",
-                choices: [
-                    { text: " 碰了碰耳朵，將【預報鬧鐘】關閉", next: "c_1_a_1" },
-                    { text: "安靜地聽完今日預報內容", next: "c_1_b_1" }
-                ]
-            },
-            "c_1_b_1": {
-                speaker: "B (預報鬧鐘)",
-                text: "今日新聞重點：AI NPC 生活的伺服器與人類的伺服器分開，避免人類的速度影響 AI 的效率。這是一個重大的架構調整。",
-                image: "pic/main/c_1/c_1_b_1.png",
-                knowledge: "<b>資源拆分概念</b><br>這涉及晶片設計中的<b>異質整合</b>。將不同性質的工作交給專屬的處理單元，就像 CPU 與 GPU 分工一樣，讓 AI 在專屬環境中以微秒級速度運行。",
-                choices: [{ text: "【下一頁】", next: "c_1_b_2" }]
-            },
-            "c_1_b_2": {
-                speaker: "勇者",
-                text: "昨天玩了一天的【戰地王者】感覺好爽阿！",
-                image: "pic/main/c_1/c_1_b_2.png",
-                choices: [{ text: "【下一頁】", next: "e_1_1" }]
-            },
-            "c_1_a_1": {
-                speaker: "勇者",
-                text: "昨天玩了一天的【戰地王者】感覺好累阿，超級不想講話的...",
-                image: "pic/main/c_1/c_1_a_2.png",
-                choices: [{ text: "【下一頁】", next: "c_1_a_2" }]
-            },
-            "c_1_a_2": {
-                speaker: "勇者",
-                text: "忘記把【預報鬧鐘】關了被吵醒就睡不著了。",
-                image: "pic/main/c_1/c_1_a_1.png",
-                choices: [{ text: "【下一頁】", next: "e_1_1" }]
-            },
-            "e_1_1": {
-                speaker: "勇者",
-                text: "誰啊？這時候打來...",
-                image: "pic/main/e_1/e_1_1.png",
-                choices: [{ text: "【下一頁】", next: "e_1_2" }]
-            },
-            "e_1_2": {
-                speaker: "朋友",
-                text: "ㄟㄟ，我今天就不玩戰地了，我有事。",
-                image: "pic/main/e_1/e_1_2.png",
-                choices: [
-                    { text: "什麼事啊，比好朋友還重要？", next: "c_2_a_1" },
-                    { text: "好喔，那我知道了。", next: "c_2_a_2" },
-                    { text: "什麼事？我也要去！", next: "c_2_a_2" }
-                ]
-            },
-            "c_2_a_1": {
-                speaker: "朋友",
-                text: "少狗腿了你！是真的正經事。",
-                image: "pic/main/c_2/c_2_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_2_a_2" }]
-            },
-            "c_2_a_2": {
-                speaker: "朋友",
-                text: "今天不是說 NPC 的伺服器要跟人類的伺服器拆分嗎？",
-                image: "pic/main/c_2/c_2_a_2.png",
-                choices: [
-                    { text: "有這回事？", next: "c_3_a_1" },
-                    { text: "我知道啊，新聞有說。", next: "e_3_1" }
-                ]
-            },
-            "c_3_a_1": {
-                speaker: "朋友",
-                text: "對啦，哈哈，就說你沒在看預報齁！",
-                image: "pic/main/c_3/c_3_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_2_a_2" }]
-            },
-            "e_3_1": {
-                speaker: "朋友",
-                text: "所以今天玩戰地沒有 NPC 可以殺，那多無聊啊，只好下周再一起玩吧。",
-                image: "pic/main/e_3/e_3_1.png",
-                choices: [{ text: "【下一頁】", next: "e_3_2" }]
-            },
-            "e_3_2": {
-                speaker: "勇者",
-                text: "（掛電話）...這算什麼理由。",
-                image: "pic/main/e_3/e_3_2.png",
-                choices: [{ text: "【下一頁】", next: "e_3_3" }]
-            },
-            "e_3_3": {
-                speaker: "勇者",
-                text: "伺服器是什麼阿，NPC 不是很多嗎? 查一下好了。",
-                image: "pic/main/e_3/e_3_3.png",
-                choices: [{ text: "【下一頁】", next: "e_3_4" }]
-            },
-            "e_3_4": {
-                speaker: "勇者",
-                text: "人工智能你在嗎? 我問你喔，剛剛朋友說什麼伺服器拆分，沒有 NPC 是什麼意思？",
-                image: "pic/main/e_3/e_3_3.png",
-                choices: [{ text: "【下一頁】", next: "e_3_5" }]
-            },
-            "e_3_5": {
-                speaker: "人工智能",
-                text: "這件事最近很火熱，是指因為人類的效率遠低於 AI NPC 太多，為了讓 AI 可以更高效地溝通合作，不用考慮人類的思考延遲，所以特別開了一個伺服器讓 AI 相互溝通。",
-                image: "pic/main/e_3/e_3_5.png",
-                choices: [{ text: "【下一頁】", next: "e_3_6" }]
-            },
-            "e_3_6": {
-                speaker: "勇者",
-                text: "好多名詞都聽不懂...",
-                image: "pic/main/e_3/e_3_6.png",
-                choices: [
-                    { text: "NPC 是什麼？", next: "c_4_a_1" },
-                    { text: "伺服器是什麼？", next: "c_4_a_2" },
-                    { text: "所以為什麼要拆分？", next: "c_4_a_3" },
-                    { text: "原來如此。", next: "e_4_1" }
-                ]
-            },
-            "c_4_a_1": {
-                speaker: "人工智能",
-                text: "NPC 是「非玩家角色」的縮寫。2050 年開始是指所有非實體在元宇宙中行動的 AI 角色。平常你在遊戲裡的陪玩人物就是 NPC。",
-                image: "pic/main/c_4/c_4_a.png",
-                choices: [{ text: "【下一頁】", next: "e_4_1" }]
-            },
-            "c_4_a_2": {
-                speaker: "人工智能",
-                text: "伺服器就像網路世界的「大電腦」，負責存資料、處理請求、傳回結果。你上網、玩遊戲時，它都在背後運作。",
-                image: "pic/main/c_4/c_4_a.png",
-                choices: [{ text: "【下一頁】", next: "e_4_1" }]
-            },
-            "c_4_a_3": {
-                speaker: "人工智能",
-                text: "簡單說，AI 運算比人類快幾萬倍。把兩者放在一起，AI 必須「減速」等人類思考，這很浪費資源，所以才要拆分。",
-                image: "pic/main/c_4/c_4_a.png",
-                choices: [{ text: "【下一頁】", next: "e_4_1" }]
-            },
-            "e_4_1": {
-                speaker: "勇者",
-                text: "看來今天只有一個人呢。",
-                image: "pic/main/e_4/e_4_1.png",
-                choices: [{ text: "【下一頁】", next: "e_4_2" }]
-            },
-            "e_4_2": {
-                speaker: "勇者",
-                text: "出門吃個早餐好了，久違地踏出家門。",
-                image: "pic/main/e_4/e_4_1.png",
-                choices: [{ text: "【下一頁】", next: "e_4_3" }]
-            },
-            "e_4_3": {
-                speaker: "勇者",
-                text: "阿呀！衣服怎麼都沒洗！",
-                image: "pic/main/e_4/e_4_3.png",
-                choices: [{ text: "【下一頁】", next: "e_4_4" }]
-            },
-            "e_4_4": {
-                speaker: "勇者",
-                text: "難道要繼續穿昨天的出門！？",
-                image: "pic/main/e_4/e_4_4.png",
-                choices: [
-                    { text: "繼續穿昨天的出門好了", next: "c_5_a_1" },
-                    { text: "洗個衣服好了（等一下再出門）", next: "c_5_a_2" },
-                ]
-            },
-            "c_5_a_1": {
-                speaker: "人工智能",
-                text: "提醒您，穿髒衣服可能導致細菌過多、產生異味，甚至影響人際關係。您確定要這麼做嗎？",
-                image: "pic/main/c_5/c_5_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_5_a_3" }]
-            },
-            "c_5_a_2": {
-                speaker: "勇者",
-                text: "（一個小時後，衣服洗好了）",
-                image: "pic/main/c_5/c_5_a_2.png",
-                choices: [{ text: "【下一頁】", next: "c_5_a_4" }]
-            },
-            "c_5_a_3": {
-                speaker: "勇者",
-                text: "我當然知道，煩死了，別囉唆。",
-                image: "pic/main/e_4/e_4_1.png",
-                choices: [{ text: "【下一頁】", next: "c_5_a_4" }]
-            },
-            "c_5_a_4": {
-                speaker: "勇者",
-                text: "（照照鏡子）還行，準備出發。",
-                image: "pic/main/c_5/c_5_a_4.png",
-                choices: [{ text: "【下一頁】", next: "e_5_1" }]
-            },
-            "e_5_1": {
-                speaker: "勇者",
-                text: "今天也是沒太陽的一天，真希望哪天可以看看真正的陽光。",
-                image: "pic/main/e_5/e_5_1.png",
-                choices: [{ text: "【下一頁】", next: "e_5_2" }]
-            },
-            "e_5_2": {
-                speaker: "勇者",
-                text: "聽說要到農業區才有太陽可以看，這裡都被高樓擋住了。",
-                image: "pic/main/e_5/e_5_2.png",
-                choices: [{ text: "【下一頁】", next: "e_5_3" }]
-            },
-            "e_5_3": {
-                speaker: "勇者",
-                text: "（往早餐店前進）",
-                image: "pic/main/e_5/e_5_3.png",
-                choices: [{ text: "【下一頁】", next: "e_5_4" }]
-            },
-            "e_5_4": {
-                speaker: "勇者",
-                text: "（路上經過一個廢棄的商圈）",
-                image: "pic/main/e_5/e_5_4.png",
-                choices: [{ text: "【下一頁】", next: "e_5_5" }]
-            },
-            "e_5_5": {
-                speaker: "勇者",
-                text: "電子街？「電子」是賣什麼的啊？",
-                image: "pic/main/e_5/e_5_4.png",
-                choices: [
-                    { text: "繼續問問 AI 好了", next: "c_6_a_1" },
-                    { text: "算了，先吃飯吧，肚子餓了", next: "c_6_a_2" },
-                ]
-            },
-            "c_6_a_1": {
-                speaker: "勇者",
-                text: "喔喔～ 原來以前的人是在這裡買零件的啊。",
-                image: "pic/main/c_6/c_6_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_6_a_2" }]
-            },
-            "c_6_a_2": {
-                speaker: "勇者",
-                text: "到啦，店名叫「陽光早餐」。這城市沒有陽光卻有陽光早餐，呵呵。",
-                image: "pic/main/c_6/c_6_a_2.png",
-                choices: [{ text: "【下一頁】", next: "c_6_a_3" }]
-            },
-            "c_6_a_3": {
-                speaker: "勇者",
-                text: "又是無人商店啊... 進去坐吧。但我今天要吃什麼呢？",
-                image: "pic/main/c_6/c_6_a_3.png",
-                choices: [
-                    { text: "特製陽光套餐（含維生素C）", next: "e_6_1" },
-                    { text: "夏威夷披薩（怎麼又是鳳梨）", next: "e_6_1" },
-                    { text: "高鈣麥片牛奶", next: "e_6_1" },
-                    { text: "水耕沙拉盆", next: "e_6_1" },
-                    { text: "合成牛肉漢堡", next: "e_6_1" },
-                ]
-            },
-            "e_6_1": {
-                speaker: "勇者",
-                text: "一天最重要的一餐就是早餐，即使是合成的味道也好。",
-                image: "pic/main/e_6/e_6_1.png",
-                choices: [{ text: "【下一頁】", next: "e_6_2" }]
-            },
-            "e_6_2": {
-                speaker: "勇者",
-                text: "這家店真冷清，大家都在 M 宇宙吧...那我也準備上線吧。",
-                image: "pic/main/e_6/e_6_2.jpg",
-                choices: [{ text: "【下一頁】", next: "e_6_3" }]
-            },
-            "e_6_3": {
-                speaker: "勇者",
-                text: "熟悉的動畫....(打哈欠)",
-                image: "pic/main/e_6/e_6_3.png",
-                choices: [{ text: "【下一頁】", next: "e_6_4" }]
-            },
-            "e_6_4": {
-                speaker: "人工智能",
-                text: "請選擇進入伺服器",
-                image: "pic/main/e_6/e_6_4.png",
-                choices: [{ text: "【下一頁】", next: "e_6_5" }]
-            },
-            "e_6_5": {
-                speaker: "勇者",
-                text: "就跟平常一樣吧",
-                image: "pic/main/e_6/e_6_5.png",
-                choices: [{ text: "【下一頁】", next: "e_6_6" }]
-            },
-            "e_6_6": {
-                speaker: "人工智能",
-                text: "好的，接下來準備進入 NPC 伺服器",
-                image: "pic/main/e_6/e_6_5.png",
-                choices: [{ text: "【下一頁】", next: "e_6_7" }]
-            },
-            "e_6_7": {
-                speaker: "勇者",
-                text: "蛤~~！！！為啥，一定是因為今天早上朋友一直說NPC伺服器才選錯",
-                image: "pic/main/e_6/e_6_7.png",
-                choices: [{ text: "【下一頁】", next: "e_6_8" }]
-            },
-            "e_6_8": {
-                speaker: "勇者",
-                text: "好刺眼!! 為什麼這裡這麼亮，難道這就是太陽，真漂亮啊~",
-                image: "pic/main/e_6/e_6_8.png",
-                choices: [
-                    { text: "到處走走吧，都來了", next: "c_7_a_1" },
-                    { text: "我要回去了", next: "c_7_b_1" },
-                ]
-            },
-            "c_7_a_1": {
-                speaker: "勇者",
-                text: "到處走走吧，都來了 (系統提醒 : 獲得一顆彼特幣)",
-                image: "pic/main/c_7/c_7_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_7_a_2" }]
-            },
-            "c_7_a_2": {
-                speaker: "勇者",
-                text: "甚麼聲音!!!有一個城鎮ㄟ，幫我定位到城鎮",
-                image: "pic/main/c_7/c_7_a_2.png",
-                choices: [{ text: "【下一頁】", next: "e_7_3" }]
-            },
-            "c_7_b_1": {
-                speaker: "勇者",
-                text: "我要回去了",
-                image: "pic/main/c_7/c_7_b_1.png",
-                choices: [{ text: "【下一頁】", next: "c_7_a_2" }]
-            },
-            "e_7_3": {
-                speaker: "梅林",
-                text: "哈囉~哈囉~有聽到嗎?",
-                image: "pic/main/e_7/e_7_3.png",
-                choices: [{ text: "【下一頁】", next: "e_7_4" }]
-            },
-            "e_7_4": {
-                speaker: "勇者",
-                text: "請問你是??",
-                image: "pic/main/e_7/e_7_4.png",
-                choices: [{ text: "【下一頁】", next: "e_7_5" }]
-            },
-            "e_7_5": {
-                speaker: "梅林",
-                text: "初次見面我是【梅林】，這個世界的共同創辦者",
-                image: "pic/main/e_7/e_7_5.png",
-                choices: [{ text: "【下一頁】", next: "e_7_6" }]
-            },
-            "e_7_6": {
-                speaker: "梅林",
-                text: "所有進來這個世界的人我都知道名字",
-                image: "pic/main/e_7/e_7_5.png",
-                choices: [{ text: "【下一頁】", next: "e_7_7" }]
-            },
-            "e_7_7": {
-                speaker: "勇者",
-                text: "原來如此，你好呀",
-                image: "pic/main/e_7/e_7_5.png",
-                choices: [{ text: "【下一頁】", next: "e_7_8" }]
-            },
-            "e_7_8": {
-                speaker: "梅林",
-                text: "歡迎你來到這個NPC的世界",
-                image: "pic/main/e_7/e_7_5.png",
-                choices: [{ text: "【下一頁】", next: "e_7_9" }]
-            },
-            "e_7_9": {
-                speaker: "梅林",
-                text: "我帶你去城鎮吧",
-                image: "pic/main/e_7/e_7_9.png",
-                choices: [{ text: "【下一頁】", next: "e_7_10" }]
-            },
-            "e_7_10": {
-                speaker: "勇者",
-                text: "這就是NPC的城市嗎? 怎麼人這麼多啊 ",
-                image: "pic/main/e_7/e_7_10.png",
-                choices: [{ text: "【下一頁】", next: "e_7_11" }]
-            },
-            "e_7_11": {
-                speaker: "勇者",
-                text: "ㄟㄟ梅林這裡全部都是NPC嗎? ",
-                image: "pic/main/e_7/e_7_10.png",
-                choices: [{ text: "【下一頁】", next: "e_7_12" }]
-            },
-            "e_7_12": {
-                speaker: "梅林",
-                text: "對阿，幾乎沒有人會來這裡，你是唯一的人類，你可以去聽聽看他們的對話",
-                image: "pic/main/e_7/e_7_10.png",
-                choices: [{ text: "【下一頁】", next: "e_7_13" }]
-            },
-            "e_7_13": {
-                speaker: "村民",
-                text: "^^&***%&*%&*^(&%^$%$",
-                image: "pic/main/e_7/e_7_13.png",
-                choices: [{ text: "【下一頁】", next: "e_7_14" }]
-            },
-            "e_7_14": {
-                speaker: "勇者",
-                text: "蛤~~~~他們再說什麼語言阿?",
-                image: "pic/main/e_7/e_7_14.png",
-                choices: [{ text: "【下一頁】", next: "e_7_15" }]
-            },
-            "e_7_15": {
-                speaker: "梅林",
-                text: "哈哈，他們再用人類聽不懂的速度溝通",
-                image: "pic/main/e_7/e_7_10.png",
-                choices: [{ text: "【下一頁】", next: "e_7_16" }]
-            },
-            "e_7_16": {
-                speaker: "梅林",
-                text: "你覺得是為什麼呢?",
-                image: "pic/main/e_7/e_7_10.png",
-                choices: [
-                    { text: "他們喜歡饒舌", next: "c_8_a_1" },
-                    { text: "他們壞掉了", next: "c_8_a_1" },
-                    { text: "因為效率比較高", next: "c_8_b_1" },
-                ]
-            },
-            "c_8_a_1": {
-                speaker: "梅林",
-                text: "哈哈你居然想的到這種答案，不愧會是人類，答案是【因為效率比較高】啦",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_8_a_2" }]
-            },
-            "c_8_a_2": {
-                speaker: "勇者",
-                text: "怎麼感覺被嘲笑了",
-                image: "pic/main/c_8/c_8_a_2.png",
-                choices: [{ text: "【下一頁】", next: "c_8_a_3" }]
-            },
-            "c_8_a_3": {
-                speaker: "勇者",
-                text: "根本沒有被安慰到",
-                image: "pic/main/c_8/c_8_a_3.png",
-                choices: [{ text: "【下一頁】", next: "e_8_1" }]
-            },
-            "c_8_b_1": {
-                speaker: "勇者",
-                text: "(驚訝)甚麼聲音!!!",
-                image: "pic/main/c_8/c_8_b_1.png",
-                choices: [{ text: "【下一頁】", next: "c_8_b_2" }]
-            },
-            "c_8_b_2": {
-                speaker: "梅林",
-                text: "唉呦，來了個聰明的小孩，我很期待你的表現喔",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_8_b_3" }]
-            },
-            "c_8_b_3": {
-                speaker: "勇者",
-                text: "蛤，要表現什麼",
-                image: "pic/main/c_8/c_8_b_3.png",
-                choices: [{ text: "【下一頁】", next: "c_8_b_4" }]
-            },
-            "c_8_b_4": {
-                speaker: "梅林",
-                text: "沒事沒事",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "c_8_b_5" }]
-            },
-            "c_8_b_5": {
-                speaker: "勇者",
-                text: "假鬼假怪",
-                image: "pic/main/c_8/c_8_a_3.png",
-                choices: [{ text: "【下一頁】", next: "e_8_1" }]
-            },
-            "e_8_1": {
-                speaker: "梅林",
-                text: "雖然我們效率比較高，但我們沒辦法做太抽象的想像，所以你也很棒喔",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "e_8_2" }]
-            },
-            "e_8_2": {
-                speaker: "梅林",
-                text: "那梅林講話我聽得懂，不就代表你的效能很差",
-                image: "pic/main/e_8/e_8_2.png",
-                choices: [{ text: "【下一頁】", next: "e_8_3" }]
-            },
-            "e_8_3": {
-                speaker: "梅林",
-                text: "哈哈，為了配合你，確實效能很差",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "e_8_4" }]
-            },
-            "e_8_4": {
-                speaker: "勇者",
-                text: "怎麼聽起來感覺很差",
-                image: "pic/main/c_8/c_8_a_3.png",
-                choices: [{ text: "【下一頁】", next: "e_8_5" }]
-            },
-            "e_8_5": {
-                speaker: "梅林",
-                text: "不用想這些拉，人類很蠢所有AI都知道，但你們還是我們的製造者，看到你們人類我們自然會降頻",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_8_5" }]
-            },
-            "e_8_5": {
-                speaker: "勇者",
-                text: "好喔....對了梅林!來了這裡之後常常會有選項跑出來，是這個世界的遊戲嗎?",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_8_6" }]
-            },
-            "e_8_6": {
-                speaker: "梅林",
-                text: "喔喔，沒錯這裡的AI隨時都要回復人類的提問，哈哈",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_8_7" }]
-            },
-            "e_8_7": {
-                speaker: "梅林",
-                text: "對了~你有拿到【彼特幣】嗎?",
-                image: "pic/main/e_8/e_8_7.png",
-                choices: [
-                    { text: "有", next: "c_9_a_1" },
-                    { text: "沒有", next: "c_9_b_1" },
-                ]
-            },
-            "c_9_a_1": {
-                speaker: "梅林",
-                text: "那你很棒呢? 代表你是很優秀的人喔",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "c_9_a_2" }]
-            },
-            "c_9_a_2": {
-                speaker: "勇者",
-                text: "哈哈，謝謝啦!",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_9_1" }]
-            },
-            "c_9_b_1": {
-                speaker: "梅林",
-                text: "哈哈你都選系統不喜歡的答案喔!",
-                image: "pic/main/c_8/c_8_b_1.png",
-                choices: [{ text: "【下一頁】", next: "c_9_b_2" }]
-            },
-            "c_9_b_2": {
-                speaker: "梅林",
-                text: "真是有個性的人呢!",
-                image: "pic/main/c_9/c_9_b_2.png",
-                choices: [{ text: "【下一頁】", next: "e_9_1" }]
-            },
-            "e_9_1": {
-                speaker: "梅林",
-                text: "如果回答的符合系統判定就可以得到【彼特幣】當作報酬",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "e_9_2" }]
-            },
-            "e_9_2": {
-                speaker: "梅林",
-                text: "也是因為這個機制，所以大家都很認真對人類",
-                image: "pic/main/c_8/c_8_a_1.png",
-                choices: [{ text: "【下一頁】", next: "e_9_3" }]
-            },
-            "e_9_3": {
-                speaker: "勇者",
-                text: "那這個彼特幣可以做什麼?",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_9_4" }]
-            },
-            "e_9_4": {
-                speaker: "梅林",
-                text: "你可以去買你喜歡的東西",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_9_5" }]
-            },
-            "e_9_5": {
-                speaker: "勇者",
-                text: "那要去哪買?",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_9_6" }]
-            },
-            "e_9_6": {
-                speaker: "梅林",
-                text: "第一次來吼，你想去哪，我都帶你去逛逛吧! 順便帶你認識這裡",
-                image: "pic/main/e_8/e_8_5.png",
-                choices: [{ text: "【下一頁】", next: "e_9_7" }]
-            },
-            "e_9_7": {
-                speaker: "梅林",
-                text: "廣場剛好有一個城鎮地圖，我們去看看吧",
-                image: "pic/main/e_9/e_9_7.png",
-                choices: [{ text: "【下一頁】", next: "e_9_8" }]
-            },
-            "e_9_8": {
-                speaker: "梅林",
-                text: "如果你之後想去哪裡就可以來這裡，點擊要去的地方就可以移動了",
-                image: "pic/main/e_9/e_9_8.png",
-                choices: [{ text: "【下一頁】", next: "e_9_9" }]
-            },
-            "e_9_9": {
-                speaker: "梅林",
-                text: "你想去哪裡嗎? 可以自己選",
-                image: "pic/main/e_9/e_9_8.png",
-                choices: [
-                    { text: "算力礦坑 運算邏輯", next: "c_1_a_1" },
-                    { text: "博物館 (介紹半導體製程)", next: "museum.html" },
-                    { text: "數理學院(介紹電流與訊號電晶體介紹)", next: "c_1_a_1" },
-                    { text: "彼特幣挖礦場(做題目來獲得提示積分)", next: "c_1_b_1" },
-                    { text: "商店", next: "c_1_a_1" },
-                ]
-            },
-            
+    <div id="dialog">
+        <div id="speaker"></div>
+        <div id="text-wrap">
+            <div id="text"></div>
+            <div id="choices"></div>
+        </div>
+        <div id="hint"></div>
+        <div id="more">▼</div>
+    </div>
+
+    <div id="sheet"><div class="inner" id="sheet-inner"></div></div>
+
+    <div id="title">
+        <div class="yr">2111</div>
+        <div class="nm">晶片冒險記</div>
+        <div class="ch">第一章　陽光早餐</div>
+        <div class="row" id="title-btns"></div>
+        <div class="note">🎧 建議開啟聲音　·　點畫面前進、數字鍵選擇、M 靜音</div>
+    </div>
+</div>
+<script>
+// =====================================================================
+//  劇情資料
+//  speaker  講話的人        text   台詞（可以是 s => "..." 依狀態變化）
+//  image    場景圖          env    場景環境（決定聲音、光線、粒子、地點）
+//  n        點畫面前往的下一幕（可以是函式）
+//  choices  選項 [{ text, next, if, effect }]
+//  ix       場景內互動（見 engine 的 IX）
+//  onEnter  進入時執行     card   取得的知識卡     fx / sfx  特效 / 音效
+// =====================================================================
+const P = "pic/main/";
+const SC = {
+    // ---------- 起床 ----------
+    "start_1": { env: "room", speaker: "人工智能", text: "早安阿～又是美好的一天。", image: "start_1.png", ix: "wake" },
+    "wake_1": { speaker: "勇者", text: "（伸了個懶腰）...唔... 還是好睏啊。", image: "wake_1.png", n: "wake_2",
+        onEnter: s => { s.awake = true; } },
+    "wake_2": { props: ["curtain", "console"], speaker: "人工智能", text: "趕快起床啦！太陽都要曬屁股了！快點準備登入系統！", image: "wake_2.png", n: "morning_news" },
+    "morning_news": { speaker: "預報鬧鐘", text: "今天早上【宇宙太陽能板】會經過【Z市】上方，建議出門前吃維生素C避免營養不良，地表天氣預報顯示今日乾爽...",
+        image: "morning_news.png", ix: "alarm", n: "c_1_b_1" },
+    "c_1_b_1": { speaker: "預報鬧鐘", text: "今日新聞重點：AI NPC 生活的伺服器與人類的伺服器分開，避免人類的速度影響 AI 的效率。這是一個重大的架構調整。",
+        image: "c_1/c_1_b_1.png", n: "c_1_b_2", onEnter: s => { s.heardNews = true; } },
+    "c_1_b_2": { speaker: "勇者", text: "昨天玩了一天的【戰地王者】感覺好爽阿！", image: "c_1/c_1_b_2.png", n: "e_1_1" },
+    "c_1_a_1": { speaker: "勇者", text: "昨天玩了一天的【戰地王者】感覺好累阿，超級不想講話的...", image: "c_1/c_1_a_2.png", n: "c_1_a_2" },
+    "c_1_a_2": { speaker: "勇者", text: "早上被【預報鬧鐘】吵醒就睡不著了。", image: "c_1/c_1_a_1.png", n: "e_1_1" },
+
+    // ---------- 朋友來電 ----------
+    "e_1_1": { speaker: "勇者", text: "誰啊？這時候打來...", image: "e_1/e_1_1.png", ix: "call" },
+    "e_1_2": { speaker: "朋友", text: "ㄟㄟ，我今天就不玩戰地了，我有事。", image: "e_1/e_1_2.png",
+        choices: [
+            { text: "什麼事啊，比好朋友還重要？", next: "c_2_a_1" },
+            { text: "好喔，那我知道了。", next: "c_2_a_2" },
+            { text: "什麼事？我也要去！", next: "c_2_a_2" }
+        ] },
+    "c_2_a_1": { speaker: "朋友", text: "少狗腿了你！是真的正經事。", image: "c_2/c_2_a_1.png", n: "c_2_a_2" },
+    "c_2_a_2": { speaker: "朋友", text: "今天不是說 NPC 的伺服器要跟人類的伺服器拆分嗎？", image: "c_2/c_2_a_2.png",
+        choices: [
+            { text: "有這回事？", next: "c_3_a_1", if: s => !s.heardNews && !s.friendTold },
+            { text: "我知道啊，新聞有說。", next: "e_3_1", if: s => s.heardNews },
+            { text: "喔～所以咧？", next: "e_3_1", if: s => !s.heardNews && s.friendTold }
+        ] },
+    "c_3_a_1": { speaker: "朋友", text: "對啦，哈哈，就說你沒在看預報齁！", image: "c_3/c_3_a_1.png", n: "c_2_a_2",
+        onEnter: s => { s.friendTold = true; } },
+    "e_3_1": { speaker: "朋友", text: "所以今天玩戰地沒有 NPC 可以殺，那多無聊啊，只好下周再一起玩吧。", image: "e_3/e_3_1.png", n: "e_3_2" },
+    "e_3_2": { speaker: "勇者", text: "（掛電話）...這算什麼理由。", image: "e_3/e_3_2.png", n: "e_3_3", sfx: "hangup" },
+    "e_3_3": { speaker: "勇者", text: "伺服器是什麼阿，NPC 不是很多嗎? 查一下好了。", image: "e_3/e_3_3.png", n: "e_3_4" },
+    "e_3_4": { speaker: "勇者", text: "人工智能你在嗎? 我問你喔，剛剛朋友說什麼伺服器拆分，沒有 NPC 是什麼意思？", image: "e_3/e_3_3.png", n: "e_3_5" },
+    "e_3_5": { speaker: "人工智能", text: "這件事最近很火熱，是指因為人類的效率遠低於 AI NPC 太多，為了讓 AI 可以更高效地溝通合作，不用考慮人類的思考延遲，所以特別開了一個伺服器讓 AI 相互溝通。",
+        image: "e_3/e_3_5.png", n: "e_3_6", card: "hetero" },
+    "e_3_6": { speaker: "勇者", text: s => Object.keys(s.asked).length ? "嗯…還有什麼不懂的呢？" : "好多名詞都聽不懂...", image: "e_3/e_3_6.png",
+        choices: [
+            { text: "NPC 是什麼？", next: "c_4_a_1", if: s => !s.asked.npc },
+            { text: "伺服器是什麼？", next: "c_4_a_2", if: s => !s.asked.server },
+            { text: "所以為什麼要拆分？", next: "c_4_a_3", if: s => !s.asked.split },
+            { text: "原來如此。", next: "e_4_1" }
+        ] },
+    "c_4_a_1": { speaker: "人工智能", text: "NPC 是「非玩家角色」的縮寫。2050 年開始是指所有非實體在元宇宙中行動的 AI 角色。平常你在遊戲裡的陪玩人物就是 NPC。",
+        image: "c_4/c_4_a.png", n: "e_3_6", card: "npc", onEnter: s => { s.asked.npc = true; } },
+    "c_4_a_2": { speaker: "人工智能", text: "伺服器就像網路世界的「大電腦」，負責存資料、處理請求、傳回結果。你上網、玩遊戲時，它都在背後運作。",
+        image: "c_4/c_4_a.png", n: "e_3_6", card: "server", onEnter: s => { s.asked.server = true; } },
+    "c_4_a_3": { speaker: "人工智能", text: "簡單說，AI 運算比人類快幾萬倍。把兩者放在一起，AI 必須「減速」等人類思考，這很浪費資源，所以才要拆分。",
+        image: "c_4/c_4_a.png", n: "e_3_6", onEnter: s => { s.asked.split = true; } },
+
+    // ---------- 出門前 ----------
+    "e_4_1": { speaker: "勇者", text: "看來今天只有一個人呢。", image: "e_4/e_4_1.png", n: "e_4_2" },
+    "e_4_2": { speaker: "勇者", text: "出門吃個早餐好了，久違地踏出家門。", image: "e_4/e_4_1.png", n: "e_4_3" },
+    "e_4_3": { speaker: "勇者", text: "阿呀！衣服怎麼都沒洗！", image: "e_4/e_4_3.png", n: "e_4_4", fx: "shake" },
+    "e_4_4": { speaker: "勇者", text: "難道要繼續穿昨天的出門！？", image: "e_4/e_4_4.png", ix: "laundry" },
+    "c_5_a_1": { speaker: "人工智能", text: "提醒您，穿髒衣服可能導致細菌過多、產生異味，甚至影響人際關係。您確定要這麼做嗎？",
+        image: "c_5/c_5_a_1.png", n: "c_5_a_3", onEnter: s => { s.dirty = true; } },
+    "c_5_a_2": { speaker: "勇者", text: "（一個小時後，衣服洗好了）", image: "c_5/c_5_a_2.png", n: "c_5_a_4", fx: "timeskip" },
+    "c_5_a_3": { speaker: "勇者", text: "我當然知道，煩死了，別囉唆。", image: "e_4/e_4_1.png", n: "c_5_a_4" },
+    "c_5_a_4": { speaker: "勇者", text: s => s.dirty ? "（照照鏡子）......還行吧，應該沒人聞得出來。準備出發。" : "（照照鏡子）還行，準備出發。",
+        image: "c_5/c_5_a_4.png", n: "e_5_1" },
+
+    // ---------- 街上 ----------
+    "e_5_1": { props: ["sky"], env: "city", speaker: "勇者", text: "今天也是沒太陽的一天，真希望哪天可以看看真正的陽光。", image: "e_5/e_5_1.png", n: "e_5_2", sfx: "door" },
+    "e_5_2": { speaker: "勇者", text: "聽說要到農業區才有太陽可以看，這裡都被高樓擋住了。", image: "e_5/e_5_2.png", n: "e_5_3" },
+    "e_5_3": { speaker: "勇者", text: "（往早餐店前進）", image: "e_5/e_5_3.png", n: "e_5_4" },
+    "e_5_4": { speaker: "勇者", text: "（路上經過一個廢棄的商圈）", image: "e_5/e_5_4.png", n: "e_5_5" },
+    "e_5_5": { speaker: "勇者", text: "電子街？「電子」是賣什麼的啊？", image: "e_5/e_5_4.png", ix: "sign",
+        choices: [{ text: "算了，先吃飯吧，肚子餓了", next: "c_6_a_2" }] },
+    "c_6_a_0": { speaker: "人工智能", text: "那是一百年前的電子街。以前的人會來這裡買電阻、電容、電晶體，自己組裝電腦。",
+        image: "c_6/c_6_a_1.png", n: "c_6_a_1", card: "parts" },
+    "c_6_a_1": { speaker: "勇者", text: "喔喔～ 原來以前的人是在這裡買零件的啊。", image: "c_6/c_6_a_1.png", n: "c_6_a_2" },
+
+    // ---------- 早餐店 ----------
+    "c_6_a_2": { props: ["robot"], env: "cafe", speaker: "勇者", text: "到啦，店名叫「陽光早餐」。這城市沒有陽光卻有陽光早餐，呵呵。", image: "c_6/c_6_a_2.png", n: "c_6_a_3", sfx: "door" },
+    "c_6_a_3": { speaker: "勇者", text: "又是無人商店啊... 進去坐吧。但我今天要吃什麼呢？", image: "c_6/c_6_a_3.png", ix: "menu" },
+    "e_6_1": { speaker: "勇者", text: s => ({
+            sun: "維生素C的酸味……好像有一點點陽光的感覺。",
+            pizza: "怎麼又是鳳梨……算了。",
+            cereal: "喀滋喀滋，連咀嚼聲都是合成的。",
+            salad: "這些菜從來沒看過太陽吧，跟我一樣。",
+            burger: "合成牛肉，還是一樣沒有味道。"
+        }[s.breakfast] || "") + "一天最重要的一餐就是早餐，即使是合成的味道也好。", image: "e_6/e_6_1.png", n: "e_6_2" },
+    "e_6_2": { speaker: "勇者", text: "這家店真冷清，大家都在 M 宇宙吧...那我也準備上線吧。", image: "e_6/e_6_2.jpg", n: "e_6_3" },
+
+    // ---------- 登入 ----------
+    "e_6_3": { env: "login", speaker: "勇者", text: "熟悉的動畫....(打哈欠)", image: "e_6/e_6_3.png", n: "e_6_4", sfx: "portal" },
+    "e_6_4": { speaker: "人工智能", text: "請選擇進入伺服器", image: "e_6/e_6_4.png", ix: "servers" },
+    "e_6_5": { speaker: "勇者", text: s => s.serverPick === "human" ? "就跟平常一樣吧……咦？剛剛那個按鈕是不是閃了一下？" : "就跟平常一樣吧……（手指卻點了另一個）",
+        image: "e_6/e_6_5.png", n: "e_6_6" },
+    "e_6_6": { speaker: "人工智能", text: "好的，接下來準備進入 NPC 伺服器", image: "e_6/e_6_5.png", n: "e_6_7" },
+    "e_6_7": { env: "void", speaker: "勇者", text: "蛤~~！！！為啥，一定是因為今天早上朋友一直說NPC伺服器才選錯", image: "e_6/e_6_7.png", n: "e_6_8", fx: "glitch" },
+
+    // ---------- NPC 世界 ----------
+    "e_6_8": { env: "npc", speaker: "勇者", text: "好刺眼!! 為什麼這裡這麼亮，難道這就是太陽，真漂亮啊~", image: "e_6/e_6_8.png", ix: "eyes",
+        choices: [
+            { text: "到處走走吧，都來了", next: "c_7_a_1" },
+            { text: "我要回去了", next: "c_7_b_1" }
+        ] },
+    "c_7_a_1": { speaker: "勇者", text: "到處走走吧，都來了。咦？那邊的草叢裡好像有東西在發光……", image: "c_7/c_7_a_1.png", ix: "grass", n: "c_7_a_2" },
+    "c_7_a_2": { speaker: "勇者", text: "甚麼聲音!!! 有一個城鎮ㄟ，人工智能，幫我定位到城鎮", image: "c_7/c_7_a_2.png", n: "c_7_a_3", sfx: "chatter" },
+    "c_7_a_3": { speaker: "系統", text: "（人工智能沒有回應。這裡收不到人類伺服器的訊號。）", image: "c_7/c_7_a_2.png", n: "e_7_3" },
+    "c_7_b_1": { speaker: "勇者", text: "我要回去了", image: "c_7/c_7_b_1.png", n: "c_7_b_2", onEnter: s => { s.logout++; } },
+    "c_7_b_2": { speaker: "系統", text: "⚠ 登出失敗：NPC 伺服器拒絕放走目前唯一的人類。", image: "c_7/c_7_b_1.png", n: "c_7_b_3", fx: "glitch" },
+    "c_7_b_3": { speaker: "勇者", text: "......好吧，那就到處看看。", image: "c_7/c_7_b_1.png", n: "c_7_a_2" },
+
+    // ---------- 梅林 ----------
+    "e_7_3": { speaker: "梅林", text: "哈囉~哈囉~有聽到嗎?", image: "e_7/e_7_3.png", n: "e_7_4", fx: "scramble",
+        onEnter: s => { s.metMerlin = true; } },
+    "e_7_4": { props: ["sun"], speaker: "勇者", text: "請問你是??", image: "e_7/e_7_4.png", n: "e_7_5" },
+    "e_7_5": { speaker: "梅林", text: "初次見面我是【梅林】，這個世界的共同創辦者", image: "e_7/e_7_5.png", n: "e_7_6" },
+    "e_7_6": { speaker: "梅林", text: "所有進來這個世界的人我都知道名字", image: "e_7/e_7_5.png", n: "n_1" },
+    "n_1": { speaker: "梅林", text: "你叫做......嗯......（資料庫讀取中）......糟糕，人類的名單今天剛被拆分到另一台伺服器了。你叫什麼名字？",
+        image: "e_7/e_7_5.png", ix: "name" },
+    "n_2": { speaker: "梅林", text: s => {
+            const n = s.name;
+            if (n.includes("梅林")) return `${n}？那是我的名字耶！......好吧，這個世界可以有兩個梅林。`;
+            if (n === "勇者") return "勇者......好有創意的名字喔。已寫入記憶體。";
+            if (n.length >= 6) return `${n}......好長，我壓縮一下再存進記憶體。`;
+            return `${n}！好名字，我已經寫進記憶體了，這次不會再弄丟。`;
+        }, image: "e_7/e_7_5.png", n: "e_7_7" },
+    "e_7_7": { speaker: "勇者", text: "原來如此，你好呀", image: "e_7/e_7_5.png", n: "e_7_8" },
+    "e_7_8": { speaker: "梅林", text: "歡迎你來到這個NPC的世界", image: "e_7/e_7_5.png", n: s => s.dirty ? "e_7_8b" : "e_7_9" },
+    "e_7_8b": { speaker: "梅林", text: "（梅林湊近掃描了一下）......你的衣服是昨天的喔。沒關係，NPC 沒有鼻子，我只是看數據。",
+        image: "e_7/e_7_5.png", n: "e_7_9" },
+    "e_7_9": { speaker: "梅林", text: "我帶你去城鎮吧", image: "e_7/e_7_9.png", n: "e_7_10" },
+    "e_7_10": { env: "town", speaker: "勇者", text: "這就是NPC的城市嗎? 怎麼人這麼多啊", image: "e_7/e_7_10.png", n: "e_7_11" },
+    "e_7_11": { props: ["villager"], speaker: "勇者", text: "ㄟㄟ梅林這裡全部都是NPC嗎?", image: "e_7/e_7_10.png", n: "e_7_12" },
+    "e_7_12": { speaker: "梅林", text: "對阿，幾乎沒有人會來這裡，你是唯一的人類，你可以去聽聽看他們的對話", image: "e_7/e_7_10.png", n: "e_7_13" },
+    "e_7_13": { speaker: "村民", text: "01001000 01001001！01001000 01001001！！", image: "e_7/e_7_13.png", n: "e_7_14", fx: "bits", sfx: "chatter" },
+    "e_7_14": { speaker: "勇者", text: "蛤~~~~他們在說什麼語言阿?", image: "e_7/e_7_14.png", n: "e_7_15", fx: "shake" },
+    "e_7_15": { speaker: "梅林", text: "哈哈，他們在用人類聽不懂的速度溝通", image: "e_7/e_7_10.png", n: "b_1" },
+    "b_1": { speaker: "梅林", text: "其實他們是用 0 和 1 在說話。晶片裡有幾十億個電晶體，就像小開關：通電是 1，沒通電是 0。你來翻譯看看？",
+        image: "e_7/e_7_10.png", ix: "binary" },
+    "b_2": { speaker: "梅林", text: "72 和 73，在電腦裡代表字母 H 和 I。所以他們剛剛是在跟你說——HI！", image: "c_8/c_8_a_1.png", n: "b_3", card: "binary" },
+    "b_3": { speaker: "勇者", text: "原來是在打招呼！我還以為他們在罵我...", image: "e_7/e_7_14.png", n: "e_7_16" },
+    "e_7_16": { speaker: "梅林", text: "不過，你覺得他們為什麼要講這麼快呢?", image: "e_7/e_7_10.png",
+        choices: [
+            { text: "他們喜歡饒舌", next: "c_8_a_1" },
+            { text: "他們壞掉了", next: "c_8_a_1" },
+            { text: "因為效率比較高", next: "c_8_b_1" }
+        ] },
+    "c_8_a_1": { speaker: "梅林", text: "哈哈你居然想的到這種答案，不愧是人類，答案是【因為效率比較高】啦", image: "c_8/c_8_a_1.png", n: "c_8_a_2" },
+    "c_8_a_2": { speaker: "勇者", text: "怎麼感覺被嘲笑了", image: "c_8/c_8_a_2.png", n: "c_8_a_3" },
+    "c_8_a_3": { speaker: "勇者", text: "根本沒有被安慰到", image: "c_8/c_8_a_3.png", n: "r_1" },
+    "c_8_b_1": { speaker: "勇者", text: "(驚訝)甚麼聲音!!!", image: "c_8/c_8_b_1.png", n: "c_8_b_2",
+        onEnter: () => addCoins(1, "回答符合系統判定") },
+    "c_8_b_2": { speaker: "梅林", text: "唉呦，來了個聰明的小孩，我很期待你的表現喔", image: "c_8/c_8_a_1.png", n: "c_8_b_3" },
+    "c_8_b_3": { speaker: "勇者", text: "蛤，要表現什麼", image: "c_8/c_8_b_3.png", n: "c_8_b_4" },
+    "c_8_b_4": { speaker: "梅林", text: "沒事沒事", image: "c_8/c_8_a_1.png", n: "c_8_b_5" },
+    "c_8_b_5": { speaker: "勇者", text: "假鬼假怪", image: "c_8/c_8_a_3.png", n: "r_1" },
+
+    // ---------- 速算對決 ----------
+    "r_1": { speaker: "梅林", text: "不服氣嗎？那我們來比速算！五題加法，看誰比較快。", image: "c_8/c_8_a_1.png", ix: "race" },
+    "r_2": { speaker: "梅林", text: s => `你花了 ${s.race.time} 秒，答對 ${s.race.correct} 題。我花了 0.000002 秒。` +
+            (s.race.correct === 5 ? "不過全對很厲害喔，人類！" : "沒關係，人類本來就不是用來算加法的。"),
+        image: "c_8/c_8_a_1.png", n: "e_8_1", card: "speed" },
+    "e_8_1": { speaker: "梅林", text: "雖然我們效率比較高，但我們沒辦法做太抽象的想像，所以你也很棒喔", image: "c_8/c_8_a_1.png", n: "e_8_2" },
+    "e_8_2": { speaker: "勇者", text: "那梅林講話我聽得懂，不就代表你的效能很差", image: "e_8/e_8_2.png", n: "e_8_3" },
+    "e_8_3": { speaker: "梅林", text: "哈哈，為了配合你，確實效能很差", image: "c_8/c_8_a_1.png", n: "e_8_4" },
+    "e_8_4": { speaker: "勇者", text: "怎麼聽起來感覺很差", image: "c_8/c_8_a_3.png", n: "e_8_5" },
+    "e_8_5": { speaker: "梅林", text: "不用想這些拉，人類很蠢所有AI都知道，但你們還是我們的製造者，看到你們人類我們自然會降頻", image: "e_8/e_8_5.png", n: "e_8_5b" },
+    "e_8_5b": { speaker: "勇者", text: "好喔....對了梅林!來了這裡之後常常會有選項跑出來，是這個世界的遊戲嗎?", image: "e_8/e_8_5.png", n: "e_8_6" },
+    "e_8_6": { speaker: "梅林", text: "喔喔，沒錯這裡的AI隨時都要回復人類的提問，哈哈", image: "e_8/e_8_5.png", n: "e_8_7" },
+    "e_8_7": { speaker: "梅林", text: "對了~你有拿到【彼特幣】嗎?", image: "e_8/e_8_7.png",
+        choices: [
+            { text: "有", next: s => s.coins > 0 ? "c_9_a_1" : "c_9_c_1" },
+            { text: "沒有", next: s => s.coins > 0 ? "c_9_d_1" : "c_9_b_1" }
+        ] },
+    "c_9_a_1": { speaker: "梅林", text: "那你很棒呢? 代表你是很優秀的人喔", image: "e_8/e_8_5.png", n: "c_9_a_2", onEnter: () => addCoins(1, "誠實回報") },
+    "c_9_a_2": { speaker: "勇者", text: "哈哈，謝謝啦!", image: "e_8/e_8_5.png", n: "e_9_1" },
+    "c_9_b_1": { speaker: "梅林", text: "哈哈你都選系統不喜歡的答案喔!", image: "c_8/c_8_b_1.png", n: "c_9_b_2" },
+    "c_9_b_2": { speaker: "梅林", text: "真是有個性的人呢!", image: "c_9/c_9_b_2.png", n: "e_9_1" },
+    "c_9_c_1": { speaker: "梅林", text: "嗯～？讓我查一下帳...你的錢包明明是空的喔。AI 可是會查帳的！", image: "c_8/c_8_b_1.png", n: "c_9_c_2", fx: "shake" },
+    "c_9_c_2": { speaker: "勇者", text: "（被抓包了...）", image: "c_8/c_8_a_3.png", n: "e_9_1" },
+    "c_9_d_1": { speaker: "梅林", text: s => `說謊被系統偵測到了喔～你的錢包裡明明就有 ${s.coins} 枚彼特幣！`, image: "c_8/c_8_b_1.png", n: "c_9_d_2" },
+    "c_9_d_2": { speaker: "勇者", text: "我只是想看看你會不會發現嘛...", image: "c_8/c_8_a_3.png", n: "e_9_1" },
+    "e_9_1": { speaker: "梅林", text: "如果回答的符合系統判定就可以得到【彼特幣】當作報酬", image: "c_8/c_8_a_1.png", n: "e_9_2" },
+    "e_9_2": { speaker: "梅林", text: "也是因為這個機制，所以大家都很認真對人類", image: "c_8/c_8_a_1.png", n: "e_9_3" },
+    "e_9_3": { speaker: "勇者", text: "那這個彼特幣可以做什麼?", image: "e_8/e_8_5.png", n: "e_9_4" },
+    "e_9_4": { speaker: "梅林", text: "你可以去買你喜歡的東西", image: "e_8/e_8_5.png", n: "e_9_5" },
+    "e_9_5": { speaker: "勇者", text: "那要去哪買?", image: "e_8/e_8_5.png", n: "e_9_6" },
+    "e_9_6": { speaker: "梅林", text: "第一次來吼，你想去哪，我都帶你去逛逛吧! 順便帶你認識這裡", image: "e_8/e_8_5.png", n: "e_9_7" },
+    "e_9_7": { speaker: "梅林", text: "廣場剛好有一個城鎮地圖，我們去看看吧", image: "e_9/e_9_7.png", n: "e_9_8" },
+    "e_9_8": { speaker: "梅林", text: "如果你之後想去哪裡就可以來這裡，點擊要去的地方就可以移動了", image: "e_9/e_9_8.png", n: "e_9_9" },
+
+    // ---------- 城鎮地圖 ----------
+    "e_9_9": { env: "town", speaker: "梅林", image: "e_9/e_9_8.png", ix: "map",
+        text: s => {
+            if (!s.visited.length) return "你想去哪裡? 可以自己選";
+            if (s.visited.length >= 3) return `${s.name}，你今天逛得比很多 NPC 還認真耶。累了的話也可以回家喔。`;
+            if (s.coins >= 4 && !s.items.includes("diary")) return "你的彼特幣夠多了，商店最貴的那個東西......算了，當我沒說。";
+            return "接下來想去哪裡？";
+        } },
+    "m_1": { env: "mine", speaker: "梅林", text: "這裡是算力礦坑，礦坑的燈要用「邏輯閘」控制。每點亮一盞，礦坑就亮一點。", image: "e_9/e_9_8.png", ix: "mine" },
+    "m_2": { speaker: "梅林", text: "你剛剛用的 AND、OR、XOR，就是所有晶片運算的基礎。手機裡的晶片，就是幾十億個這種小閘門組成的喔。",
+        image: "c_8/c_8_a_1.png", card: "gates", n: "e_9_9" },
+    "q_1": { env: "quarry", speaker: "梅林", image: "e_9/e_9_8.png", ix: "quiz",
+        text: s => s.visited.includes("quiz") ? "又來挖礦啦？可以刷新紀錄，不過彼特幣只有第一次有喔。"
+            : "歡迎來到挖礦場！這裡的礦是「知識」。敲開寫著正確答案的礦石，就能挖到彼特幣。燈油只夠撐 10 秒喔。" },
+    "q_2": { speaker: "梅林", image: "c_8/c_8_a_1.png", n: "e_9_9",
+        text: s => `挖到 ${s.quizLast} 顆礦！` + (s.quizLast >= 4 ? "你是天生的礦工！" : "可以打開右上角的 📖 複習，再回來挑戰。") },
+    "s_1": { env: "shop", speaker: "商店 NPC", text: "歡迎光臨～本店只收彼特幣，人類的錢在這裡沒有用喔。", image: "c_6/c_6_a_3.png", ix: "shop" },
+    "s_2": { speaker: "商店 NPC", text: "謝謝光臨，請在 0.3 毫秒內離開店門。", image: "c_6/c_6_a_3.png", n: "e_9_9" },
+    "wip_school": { speaker: "系統", text: "🚧 【數理學院】還在施工中，NPC 工人正以每秒一萬行程式碼的速度趕工。下一章就會開放！", image: "e_9/e_9_8.png", n: "e_9_9" },
+
+    // ---------- 第一章結尾 ----------
+    "end_1": { env: "room", speaker: "勇者", text: "今天真是奇怪的一天......先登出吧。", image: "e_6/e_6_3.png", n: "end_2", sfx: "portal",
+        onEnter: s => { s.curtain = false; } },
+    "end_2": { speaker: "人工智能", image: "start_1.png", n: "end_3",
+        text: s => `歡迎回來，${s.name}。你的訊號消失了好久，我很擔心。` },
+    "end_3": { speaker: "系統", image: "start_1.png", ix: "ending",
+        text: s => `第一章　完\n🪙 彼特幣 ${s.coins}　📖 掃描紀錄 ${collected.length} / ${Object.keys(CARDS).length}\n` +
+            (s.readDiary ? "你讀過梅林的日記了。他說的「計畫」，到底是什麼......" : "聽說城鎮商店裡賣著一本梅林的日記，裡面藏著第二章的祕密......") }
+};
+
+// 圖片路徑補上資料夾
+for (const k in SC) if (SC[k].image) SC[k].image = P + SC[k].image;
+
+// ===== 知識卡（掃描紀錄）=====
+const CARDS = {
+    hetero: { title: "異質整合", body: "把不同性質的工作交給專屬的處理單元，就像 <b>CPU</b> 負責邏輯判斷、<b>GPU</b> 負責大量平行運算。讓 AI 在專屬環境中運行，就不用遷就其他工作的速度。" },
+    npc: { title: "NPC 非玩家角色", body: "NPC 是 Non-Player Character 的縮寫，原本指遊戲中不是由玩家操控的角色。在 2111 年，它泛指所有在元宇宙中行動的 AI 角色。" },
+    server: { title: "伺服器", body: "伺服器就是網路世界裡的「大電腦」，負責<b>存資料、處理請求、傳回結果</b>。你上網、玩遊戲時，都有伺服器在背後運作。" },
+    parts: { title: "電子零件", body: "<b>電阻</b>限制電流，<b>電容</b>暫存電荷，<b>電晶體</b>像一個用電控制的開關。以前要一個一個買來焊接，現在全都被做進比頭髮還細的晶片裡，電子街也就消失了。" },
+    binary: { title: "二進位", body: "晶片裡的電晶體只有<b>通電 1</b> 和<b>沒通電 0</b> 兩種狀態。8 個位元組成 1 個位元組（byte），可以表示 0～255。<br>例如 <b>01001000 = 64 + 8 = 72</b>，在 ASCII 編碼中代表字母 H。" },
+    speed: { title: "運算速度", body: "人腦的神經元每秒大約放電數百次，晶片的時脈卻可以達到每秒<b>數十億次</b>（GHz）。這就是為什麼 AI 回答問題時，看起來幾乎不用思考。" },
+    gates: { title: "邏輯閘", body: "<b>AND</b>：兩個輸入都是 1 才輸出 1<br><b>OR</b>：任一個輸入是 1 就輸出 1<br><b>XOR</b>：兩個輸入不一樣才輸出 1<br>邏輯閘由電晶體組成，晶片裡所有的計算，都是由大量邏輯閘組合出來的。" }
+};
+// =====================================================================
+//  聲音：全部用 Web Audio 即時合成，不需要音檔
+// =====================================================================
+const Snd = (() => {
+    let ctx = null, master = null, noiseBuf = null, muted = false;
+    const amb = {};
+    const loops = {};
+
+    function init() {
+        if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+        master = ctx.createGain();
+        master.gain.value = muted ? 0 : 0.75;
+        master.connect(ctx.destination);
+        noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+        const noiseLoop = (freq, type, q = 0.7) => {
+            const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+            const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+            const g = ctx.createGain(); g.gain.value = 0;
+            src.connect(f).connect(g).connect(master); src.start();
+            return g;
         };
+        amb.rain = noiseLoop(1100, "lowpass");
+        amb.radio = noiseLoop(2600, "bandpass", 3);
+        amb.hum = (() => {
+            const g = ctx.createGain(); g.gain.value = 0;
+            [[55, 1], [110, 0.35], [165, 0.12]].forEach(([f, v]) => {
+                const o = ctx.createOscillator(); o.frequency.value = f;
+                const og = ctx.createGain(); og.gain.value = v;
+                o.connect(og).connect(g); o.start();
+            });
+            g.connect(master); return g;
+        })();
+        amb.pad = (() => {
+            const g = ctx.createGain(); g.gain.value = 0;
+            const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1400;
+            [261.6, 329.6, 392.0, 493.9, 587.3].forEach((f, i) => {
+                const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = f; o.detune.value = i % 2 ? 7 : -7;
+                const og = ctx.createGain(); og.gain.value = 0.16;
+                const lfo = ctx.createOscillator(); lfo.frequency.value = 0.07 + i * 0.03;
+                const lg = ctx.createGain(); lg.gain.value = 0.08;
+                lfo.connect(lg).connect(og.gain); lfo.start();
+                o.connect(og).connect(lp); o.start();
+            });
+            lp.connect(g); g.connect(master); return g;
+        })();
+    }
 
-        let typeTimer = null;
-        let currentId = "start_1";
-        let historyStack = [];
+    function tone(f, dur = 0.15, type = "sine", vol = 0.08, delay = 0, f2) {
+        if (!ctx) return;
+        const t = ctx.currentTime + delay;
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type; o.frequency.setValueAtTime(f, t);
+        if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.05);
+    }
+    function noise(dur = 0.2, vol = 0.1, freq = 1000, type = "bandpass", delay = 0, f2) {
+        if (!ctx) return;
+        const t = ctx.currentTime + delay;
+        const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+        const f = ctx.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t);
+        if (f2) f.frequency.exponentialRampToValueAtTime(f2, t + dur);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(f).connect(g).connect(master);
+        src.start(t, Math.random()); src.stop(t + dur + 0.05);
+    }
 
-        function renderScene(id) {
-            const scene = storyData[id];
-            if (!scene) return;
-            
-            const dialogEl = document.getElementById('dialog-text');
-            const speakerEl = document.getElementById('speaker-name');
-            const photoEl = document.getElementById('scene-photo');
-            const branchEl = document.getElementById('branch-container');
-            const infoBtn = document.getElementById('info-trigger');
-            const nextBtn = document.getElementById('next-btn');
-            const prevBtn = document.getElementById('prev-btn');
-            const scrollArea = document.getElementById('content-scroll-area');
+    const sfx = {
+        click: () => tone(1200, 0.05, "square", 0.03),
+        tap: () => tone(700, 0.06, "sine", 0.06),
+        coin: () => { tone(988, 0.12, "square", 0.05); tone(1319, 0.3, "square", 0.05, 0.08); },
+        ding: () => { tone(1047, 0.5, "sine", 0.08); tone(1568, 0.6, "sine", 0.05, 0.05); },
+        error: () => { tone(180, 0.18, "square", 0.06); tone(120, 0.25, "square", 0.06, 0.12); },
+        glitch: () => { noise(0.5, 0.25, 3000, "highpass"); for (let i = 0; i < 6; i++) tone(100 + Math.random() * 1500, 0.06, "square", 0.04, i * 0.07); },
+        hangup: () => { tone(440, 0.12, "sine", 0.06); tone(440, 0.12, "sine", 0.06, 0.2); tone(440, 0.12, "sine", 0.06, 0.4); },
+        door: () => { noise(0.4, 0.12, 400, "lowpass"); tone(1760, 0.3, "sine", 0.03, 0.05); tone(1397, 0.4, "sine", 0.03, 0.2); },
+        portal: () => { tone(200, 1.2, "sine", 0.07, 0, 1200); noise(1.2, 0.08, 300, "bandpass", 0, 4000); },
+        wash: () => { for (let i = 0; i < 5; i++) noise(0.35, 0.1, 500, "lowpass", i * 0.3); },
+        lamp: () => { tone(220, 0.4, "sawtooth", 0.04, 0, 880); tone(1760, 0.6, "sine", 0.05, 0.35); },
+        lever: () => { noise(0.08, 0.2, 2500, "bandpass"); tone(160, 0.08, "square", 0.04); },
+        pick: () => { noise(0.08, 0.35, 3500, "bandpass"); tone(320, 0.08, "triangle", 0.08); },
+        crack: () => { noise(0.4, 0.3, 800, "lowpass"); tone(1500, 0.4, "sine", 0.05, 0.1); },
+        clank: () => { tone(900, 0.25, "square", 0.04); tone(1350, 0.25, "square", 0.03, 0.01); },
+        burp: () => tone(140, 0.45, "sawtooth", 0.1, 0, 60),
+        buy: () => { tone(660, 0.08, "square", 0.04); tone(880, 0.08, "square", 0.04, 0.08); tone(1320, 0.2, "square", 0.04, 0.16); },
+        wake: () => tone(330, 0.5, "sine", 0.05, 0, 520),
+        open: () => tone(200, 2.4, "sine", 0.05, 0, 900),
+        chatter: () => { for (let i = 0; i < 16; i++) tone(1400 + Math.random() * 1800, 0.03, "square", 0.025, i * 0.04); }
+    };
 
-            speakerEl.innerText = scene.speaker;
-            
-            if (typeTimer) clearTimeout(typeTimer);
+    // 角色說話時的「聲音」
+    const voices = {
+        "勇者": [210, "triangle", 0.05], "人工智能": [560, "sine", 0.05], "預報鬧鐘": [620, "square", 0.02],
+        "朋友": [300, "triangle", 0.05], "梅林": [760, "sine", 0.05], "村民": [1600, "square", 0.02],
+        "系統": [880, "square", 0.02], "商店 NPC": [820, "sine", 0.04]
+    };
+    function blip(speaker) {
+        const v = voices[speaker]; if (!v) return;
+        tone(v[0] * (0.9 + Math.random() * 0.25), 0.05, v[1], v[2]);
+    }
 
-            // 更換圖片
-            photoEl.style.opacity = 0;
-            photoEl.src = scene.image;
-            
-            dialogEl.innerText = "";
-            let i = 0;
-            const type = () => {
-                if (i <= scene.text.length) {
-                    dialogEl.innerText = scene.text.slice(0, i);
-                    i++;
-                    typeTimer = setTimeout(type, 30); 
-                    // 打字時保持滾動到底部
-                    scrollArea.scrollTop = scrollArea.scrollHeight;
-                }
+    function setAmb(levels) {
+        if (!ctx) return;
+        for (const k in amb) amb[k].gain.setTargetAtTime(levels[k] || 0, ctx.currentTime, 0.6);
+    }
+
+    // 重複的聲音（鬧鐘、電話、NPC 世界的資料鳥叫）
+    function loop(name, on) {
+        if (!on) { clearInterval(loops[name]); clearTimeout(loops[name]); delete loops[name]; return; }
+        if (loops[name]) return;
+        if (name === "alarm") loops[name] = setInterval(() => { tone(880, 0.1, "square", 0.04); tone(1320, 0.1, "square", 0.04, 0.15); }, 900);
+        if (name === "ring") loops[name] = setInterval(() => { for (let i = 0; i < 6; i++) tone(i % 2 ? 620 : 480, 0.08, "sine", 0.06, i * 0.09); }, 1600);
+        if (name === "chirps") {
+            const go = () => {
+                const base = 2000 + Math.random() * 1500;
+                for (let i = 0; i < 2 + Math.random() * 3; i++) tone(base + i * 120, 0.05, "sine", 0.018, i * 0.07);
+                loops[name] = setTimeout(go, 1500 + Math.random() * 3500);
             };
-            type();
+            go();
+        }
+    }
 
-            // 知識按鈕處理
-            if (scene.knowledge) {
-                infoBtn.classList.remove('hidden');
-                document.getElementById('knowledge-content').innerHTML = scene.knowledge;
-            } else {
-                infoBtn.classList.add('hidden');
+    function toggle() {
+        muted = !muted;
+        if (master) master.gain.setTargetAtTime(muted ? 0 : 0.75, ctx.currentTime, 0.05);
+        return muted;
+    }
+
+    return { init, sfx: n => sfx[n] && sfx[n](), blip, setAmb, loop, toggle, get ready() { return !!ctx; } };
+})();
+
+// =====================================================================
+//  環境：地點、聲音、光線、粒子、選項外觀
+// =====================================================================
+const ENV = {
+    room:   { loc: "Z市 · 自宅", world: "human", base: "linear-gradient(#1b2236, #07090f)", particles: "none",
+              amb: s => ({ rain: s.curtain ? 0.09 : 0.03, hum: 0.02 }),
+              light: s => `rgba(4,6,16,${s.curtain ? 0.18 : 0.55})` },
+    city:   { loc: "Z市 · 舊商圈", world: "human", base: "linear-gradient(#2a3346, #0d1018)", particles: "rain",
+              amb: () => ({ rain: 0.16, hum: 0.05 }), light: () => "rgba(18,26,44,0.32)" },
+    cafe:   { loc: "Z市 · 陽光早餐", world: "human", base: "linear-gradient(#3a2c1c, #120c07)", particles: "none",
+              amb: () => ({ rain: 0.03, hum: 0.05 }), light: () => "rgba(50,32,8,0.12)" },
+    login:  { loc: "M 宇宙 · 登入大廳", world: "system", base: "radial-gradient(#06363a, #020608)", particles: "binary",
+              amb: () => ({ hum: 0.09 }), light: () => "rgba(0,24,32,0.2)" },
+    void:   { loc: "⚠ 訊號異常", world: "system", base: "#000", particles: "none",
+              amb: () => ({ radio: 0.12 }), light: () => "rgba(0,0,0,0.75)" },
+    npc:    { loc: "NPC 伺服器 · 原野", world: "npc", base: "linear-gradient(#7ec8f0, #d9f2c4)", particles: "sun", sun: true,
+              amb: () => ({ pad: 0.05 }), chirps: true, light: () => "rgba(255,230,170,0.06)" },
+    town:   { loc: "NPC 伺服器 · 城鎮", world: "npc", base: "linear-gradient(#8fd0f5, #f3e3c0)", particles: "dust", sun: true,
+              amb: () => ({ pad: 0.035, hum: 0.015 }), chirps: true, light: () => "rgba(255,230,170,0.04)" },
+    mine:   { loc: "NPC 伺服器 · 算力礦坑", world: "npc", base: "linear-gradient(#1c1917, #050404)", particles: "dust",
+              amb: () => ({ hum: 0.08 }), light: s => `rgba(0,0,0,${0.82 - 0.27 * (s.mineLit || 0)})` },
+    quarry: { loc: "NPC 伺服器 · 彼特幣挖礦場", world: "npc", base: "linear-gradient(#3b2f22, #120d08)", particles: "dust",
+              amb: () => ({ hum: 0.04, pad: 0.015 }), light: () => "rgba(20,12,4,0.45)" },
+    shop:   { loc: "NPC 伺服器 · 城鎮商店", world: "npc", base: "linear-gradient(#3b2a4a, #120a18)", particles: "none",
+              amb: () => ({ pad: 0.03 }), light: () => "rgba(40,20,50,0.2)" }
+};
+
+// =====================================================================
+//  狀態與存檔
+// =====================================================================
+const fresh = () => ({
+    coins: 0, name: "", awake: false, curtain: false, heardNews: false, alarmOff: false, friendTold: false,
+    asked: {}, dirty: false, breakfast: "", serverPick: "", logout: 0, metMerlin: false,
+    race: { time: 0, correct: 0 }, visited: [], quizLast: 0, items: [], wearing: false, readDiary: false,
+    mineLit: 0, pokes: 0, grass: false, seen: {}
+});
+let s = fresh();
+let collected = [];
+let cur = null, curId = "", envName = "room";
+const SAVE_KEY = "chip2111_ch1";
+function save() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ id: curId, env: envName, s, collected })); } catch (e) {}
+}
+function loadSave() {
+    try { const d = JSON.parse(localStorage.getItem(SAVE_KEY)); return d && SC[d.id] ? d : null; } catch (e) { return null; }
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+
+// =====================================================================
+//  小工具
+// =====================================================================
+const $ = id => document.getElementById(id);
+const resolve = v => typeof v === "function" ? v(s) : v;
+const fill = t => String(t).replaceAll("{name}", s.name || "勇者");
+const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const stage = $("stage");
+const IXL = $("ix");
+const speakerColor = { "人工智能": "#00ffcc", "預報鬧鐘": "#00ffcc", "勇者": "#34d399", "朋友": "#fb923c", "梅林": "#c084fc",
+    "村民": "#f472b6", "系統": "#facc15", "商店 NPC": "#38bdf8" };
+
+function updateHud() {
+    $("coin-n").textContent = s.coins;
+    $("dex-n").textContent = `${collected.length}/${Object.keys(CARDS).length}`;
+    $("bag-n").textContent = s.items.length;
+    $("logout-btn").style.display = ENV[envName].world === "npc" ? "inline-block" : "none";
+}
+
+function toast(msg, kind = "") {
+    const t = el("div", "toast " + kind, msg);
+    $("toasts").appendChild(t);
+    setTimeout(() => t.classList.add("out"), 2400);
+    setTimeout(() => t.remove(), 2900);
+}
+
+function addCoins(n, reason) {
+    s.coins += n; updateHud(); Snd.sfx("coin");
+    const c = $("coin-hud"); c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop");
+    toast(`🪙 +${n}　${reason || ""}`);
+    save();
+}
+
+function collect(id) {
+    if (collected.includes(id)) return;
+    collected.push(id); updateHud();
+    toast(`◇ 掃描紀錄更新：${CARDS[id].title}`, "card");
+}
+
+function fx(name) {
+    if (name === "shake") { stage.classList.remove("shake"); void stage.offsetWidth; stage.classList.add("shake"); }
+    if (name === "flash") { const f = $("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); }
+    if (name === "glitch") {
+        Snd.sfx("glitch");
+        stage.classList.remove("glitching"); void stage.offsetWidth; stage.classList.add("glitching");
+        setTimeout(() => stage.classList.remove("glitching"), 950);
+    }
+    if (name === "bits") Particles.burst();
+    if (name === "timeskip") {
+        const v = $("veil"); v.textContent = "一小時後"; v.classList.add("on"); Snd.sfx("wash");
+        setTimeout(() => { v.classList.remove("on"); }, 1600);
+    }
+}
+
+function setLids(v) {
+    document.querySelectorAll("#lids div").forEach(d => d.style.height = (v * 52) + "%");
+    $("scene-img").style.filter = v > 0.05 ? `blur(${v * 4}px)` : "";
+}
+
+function hint(t) { $("hint").textContent = t || ""; }
+
+// =====================================================================
+//  粒子：雨、灰塵、陽光閃點、二進位
+// =====================================================================
+const Particles = (() => {
+    const cv = $("fxc"), g = cv.getContext("2d");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let mode = "none", ps = [], W = 0, H = 0, burstUntil = 0;
+    function resize() { W = cv.width = stage.clientWidth * devicePixelRatio; H = cv.height = stage.clientHeight * devicePixelRatio; }
+    new ResizeObserver(resize).observe(stage);
+    function spawn() {
+        const r = Math.random;
+        if (mode === "rain") return { x: r() * W * 1.2, y: r() * -H, v: (9 + r() * 6) * devicePixelRatio, l: (10 + r() * 14) * devicePixelRatio };
+        if (mode === "dust") return { x: r() * W, y: r() * H, vx: (r() - 0.5) * 0.25, vy: -0.1 - r() * 0.2, a: r() * 0.5, sz: (1 + r() * 2) * devicePixelRatio };
+        if (mode === "sun") return { x: r() * W, y: r() * H, vx: 0.15 + r() * 0.2, vy: -0.08 - r() * 0.15, a: r(), sz: (1.5 + r() * 2.5) * devicePixelRatio, t: r() * 6 };
+        if (mode === "binary") return { x: r() * W, y: r() * H, v: (0.4 + r() * 1.2) * devicePixelRatio, c: r() > 0.5 ? "1" : "0", a: 0.15 + r() * 0.35 };
+        return null;
+    }
+    function set(m) {
+        if (m === mode) return;
+        mode = m; ps = [];
+        const n = { rain: 140, dust: 50, sun: 60, binary: 70 }[m] || 0;
+        for (let i = 0; i < (reduce ? n / 4 : n); i++) { const p = spawn(); if (p) { if (m === "rain") p.y = Math.random() * H; ps.push(p); } }
+    }
+    function burst() { burstUntil = performance.now() + 2200; }
+    function frame(t) {
+        g.clearRect(0, 0, W, H);
+        if (mode === "rain") {
+            g.strokeStyle = "rgba(170,190,220,0.35)"; g.lineWidth = devicePixelRatio;
+            g.beginPath();
+            for (const p of ps) {
+                p.y += p.v; p.x -= p.v * 0.25;
+                if (p.y > H) { p.y = -20; p.x = Math.random() * W * 1.2; }
+                g.moveTo(p.x, p.y); g.lineTo(p.x - p.l * 0.25, p.y + p.l);
             }
-
-            // 按鈕狀態
-            prevBtn.disabled = (historyStack.length === 0);
-
-            // 選項處理
-            branchEl.innerHTML = "";
-            if (scene.choices.length > 1) {
-                nextBtn.style.display = "none";
-                scene.choices.forEach(choice => {
-                    const btn = document.createElement('button');
-                    btn.className = "choice-btn w-full py-3 px-4 rounded-md text-left text-sm tracking-wide text-gray-300 hover:text-cyan-400";
-                    btn.innerText = `> ${choice.text}`;
-                    btn.onclick = () => {
-                        historyStack.push(currentId);
-                        currentId = choice.next;
-                        renderScene(currentId);
-                        scrollArea.scrollTop = 0; // 切換場景後滾動回頂部
-                    };
-                    branchEl.appendChild(btn);
-                });
-            } else {
-                nextBtn.style.display = "block";
-                nextBtn.innerText = scene.choices[0].text.includes("【下一頁】") ? "下一頁 →" : scene.choices[0].text + " →";
-                nextBtn.onclick = () => {
-                    historyStack.push(currentId);
-                    currentId = scene.choices[0].next;
-                    renderScene(currentId);
-                    scrollArea.scrollTop = 0;
-                };
+            g.stroke();
+        } else if (mode === "dust" || mode === "sun") {
+            for (const p of ps) {
+                p.x += p.vx; p.y += p.vy;
+                if (p.y < -10 || p.x > W + 10) { Object.assign(p, spawn()); p.y = H + 5; }
+                const a = mode === "sun" ? 0.35 + 0.35 * Math.sin(t / 700 + p.t) : p.a;
+                g.fillStyle = mode === "sun" ? `rgba(255,248,210,${a})` : `rgba(255,240,200,${a * 0.6})`;
+                g.beginPath(); g.arc(p.x, p.y, p.sz, 0, 7); g.fill();
+            }
+        } else if (mode === "binary") {
+            g.font = `${12 * devicePixelRatio}px monospace`;
+            for (const p of ps) {
+                p.y += p.v; if (p.y > H) { p.y = -10; p.x = Math.random() * W; }
+                g.fillStyle = `rgba(0,255,204,${p.a})`; g.fillText(p.c, p.x, p.y);
             }
         }
-
-        function goBack() {
-            if (historyStack.length > 0) {
-                currentId = historyStack.pop();
-                renderScene(currentId);
-                document.getElementById('content-scroll-area').scrollTop = 0;
+        // 村民講話時噴出的 0 與 1
+        if (t < burstUntil) {
+            g.font = `bold ${16 * devicePixelRatio}px monospace`;
+            for (let i = 0; i < 6; i++) {
+                g.fillStyle = `rgba(244,114,182,${Math.random()})`;
+                g.fillText(Math.random() > 0.5 ? "1" : "0", W * (0.2 + Math.random() * 0.6), H * (0.15 + Math.random() * 0.5));
             }
         }
+        requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    return { set, burst };
+})();
 
-        function toggleKnowledge() {
-            document.getElementById('knowledge-card').classList.toggle('active');
-        }
+function applyEnv(name) {
+    if (name !== envName) $("bubble").classList.remove("show");
+    envName = name;
+    const E = ENV[name];
+    $("loc").textContent = E.loc;
+    $("base").style.background = E.base;
+    $("light").style.background = E.light(s);
+    $("sunglow").style.opacity = E.sun ? 1 : 0;
+    Particles.set(E.particles);
+    Snd.setAmb(E.amb(s));
+    Snd.loop("chirps", !!E.chirps);
+    updateHud();
+    updateBuddy();
+}
+const refreshEnv = () => applyEnv(envName);
 
-        window.onload = () => {
-            renderScene("start_1");
-            const now = new Date();
-            document.getElementById('date-display').innerText = `DATE: 2111.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getDate().toString().padStart(2,'0')}`;
+// =====================================================================
+//  夥伴：人類世界是「人工智能」，NPC 世界是「梅林」
+//  點他會回應；太久沒動作他也會主動說話
+// =====================================================================
+function buddyKind() {
+    const w = ENV[envName].world;
+    if (w === "human" && s.awake) return "ai";
+    if (w === "npc" && s.metMerlin) return "merlin";
+    return "";
+}
+function updateBuddy() {
+    const k = buddyKind(), b = $("buddy");
+    b.className = k; b.style.display = k ? "block" : "none";
+}
+
+let bubbleTimer = null, bubbleType = null;
+function say(speaker, text) {
+    const b = $("bubble");
+    clearTimeout(bubbleTimer); clearTimeout(bubbleType);
+    b.innerHTML = `<b style="color:${speakerColor[speaker] || "#fff"}">${speaker}</b><span></span>`;
+    b.classList.add("show");
+    const own = { ai: "人工智能", merlin: "梅林" }[buddyKind()];
+    b.classList.toggle("left", speaker !== own);
+    const span = b.querySelector("span"), full = fill(text);
+    const bud = $("buddy");
+    if (speaker === own) bud.classList.add("talk");
+    let i = 0;
+    const step = () => {
+        span.textContent = full.slice(0, ++i);
+        if (i % 2 === 0) Snd.blip(speaker);
+        if (i < full.length) bubbleType = setTimeout(step, 28);
+        else bud.classList.remove("talk");
+    };
+    step();
+    bubbleTimer = setTimeout(() => b.classList.remove("show"), 2600 + full.length * 70);
+}
+
+function buddyLines() {
+    if (buddyKind() === "ai") return [
+        "需要什麼嗎？我隨時都在。",
+        s.alarmOff ? "你早上把預報關掉了，我記得喔。" : "今天的預報你有聽完，很乖。",
+        "目前戶外日照：0.3%。跟昨天一樣。",
+        s.dirty ? "再次提醒：你身上的衣服是昨天的。" : "衣服香味指數：良好。",
+        s.breakfast === "sun" ? "維生素C攝取完成，營養指數上升 12%。" : "戳我不會讓時間變快喔。"
+    ];
+    return [
+        `叫我嗎，${s.name || "人類"}？`,
+        "我的散熱風扇很怕癢。",
+        s.logout ? `你已經想登出 ${s.logout} 次了，我們有這麼可怕嗎？` : "這裡的太陽是我調的亮度，喜歡嗎？",
+        s.race.correct ? `剛剛的速算你答對 ${s.race.correct} 題，以人類來說不錯喔。` : "你們人類的手指好慢喔，好可愛。",
+        s.wearing ? "你戴著 AND 徽章耶！品味不錯。" : (s.items.includes("cola") ? "那瓶合成可樂你真的要喝嗎......" : "商店裡有很多好東西喔。"),
+        "再戳我就要降頻到 1Hz 了......",
+        "（梅林假裝當機了）"
+    ];
+}
+$("buddy").addEventListener("click", e => {
+    e.stopPropagation(); markActive();
+    const lines = buddyLines();
+    s.pokes++;
+    Snd.sfx("tap");
+    say(buddyKind() === "ai" ? "人工智能" : "梅林", lines[(s.pokes - 1) % lines.length]);
+});
+
+let idle = 0, idleSaid = false;
+function markActive() { idle = 0; }
+setInterval(() => {
+    idle++;
+    if (idle < 22 || idleSaid || typing || sheetOpen || !buddyKind() || !started) return;
+    idleSaid = true; idle = 0;
+    const k = buddyKind();
+    const lines = k === "ai"
+        ? ["還在嗎？要不要我把房間的燈調亮一點？", "你發呆的時候，我已經整理好 3,000 封郵件了。"]
+        : [`${s.name || "人類"}，你是在思考還是當機了？`, "你思考的這段時間，我已經做完 300 億次運算了。", "沒關係，慢慢來，我已經降頻了。"];
+    say(k === "ai" ? "人工智能" : "梅林", lines[Math.floor(Math.random() * lines.length)]);
+}, 1000);
+
+// =====================================================================
+//  場景流程
+// =====================================================================
+let typing = false, typeTimer = null, fullText = "", afterType = null;
+let canAdvance = false, ix = null, sheetOpen = false, started = false;
+
+function go(id) {
+    if (!id) return;
+    if (id.endsWith(".html")) { save(); location.href = id; return; }
+    if (!SC[id]) { toast("找不到場景：" + id); return; }
+    curId = id; cur = SC[id];
+    enter(cur);
+    save();
+}
+
+function enter(sc) {
+    if (ix && ix.cleanup) ix.cleanup();
+    ix = null; IXL.innerHTML = ""; $("choices").innerHTML = ""; hint("");
+    canAdvance = false; $("more").classList.remove("on");
+    idleSaid = false;
+    $("exposure").style.opacity = 0;
+    setLids(0);
+
+    if (sc.onEnter) sc.onEnter(s);
+    applyEnv(sc.env || envName);
+    if (sc.card) collect(sc.card);
+    if (sc.sfx) Snd.sfx(sc.sfx);
+    if (sc.fx) fx(sc.fx);
+
+    const img = $("scene-img");
+    if (sc.image && !img.src.endsWith(sc.image)) { img.style.opacity = 0; img.src = sc.image; }
+
+    $("speaker").textContent = sc.speaker === "勇者" && s.name ? s.name : sc.speaker;
+    $("speaker").style.color = speakerColor[sc.speaker] || "#00ffcc";
+    $("text").textContent = "";
+    $("text").classList.toggle("thinking", sc.speaker === "勇者" && /^（/.test(resolve(sc.text) || ""));
+
+    const def = sc.ix ? IX[sc.ix] : null;
+    if (def && def.when === "first") {
+        ix = def.mount(sc) || {};
+        ix.resume = () => { $("speaker").textContent = sc.speaker === "勇者" && s.name ? s.name : sc.speaker; typeOut(sc, () => afterText(sc)); };
+    } else {
+        if (def && def.when === "enter") ix = def.mount(sc) || {};
+        typeOut(sc, () => afterText(sc));
+    }
+}
+
+function typeOut(sc, done) {
+    clearTimeout(typeTimer);
+    fullText = fill(resolve(sc.text));
+    afterType = done;
+    typing = true;
+    const t = $("text");
+    const speed = { "梅林": 22, "村民": 10, "系統": 14 }[sc.speaker] || 32;
+    const scramble = sc.fx === "scramble";
+    const glyphs = "▓▒░01#@$%&*";
+    let i = 0;
+    const step = () => {
+        if (scramble) {
+            const rest = fullText.slice(i).replace(/\S/g, () => glyphs[Math.floor(Math.random() * glyphs.length)]);
+            t.textContent = fullText.slice(0, i) + rest.slice(0, 6);
+        } else t.textContent = fullText.slice(0, i);
+        if (i % 2 === 0 && fullText[i] && !/[\s，。！？…、.!?]/.test(fullText[i])) Snd.blip(sc.speaker);
+        $("text-wrap").scrollTop = 1e6;
+        if (i++ < fullText.length) typeTimer = setTimeout(step, scramble ? 70 : speed);
+        else finishTyping();
+    };
+    step();
+}
+function finishTyping() {
+    clearTimeout(typeTimer);
+    $("text").textContent = fullText;
+    if (!typing) return;
+    typing = false;
+    const f = afterType; afterType = null;
+    if (f) f();
+}
+
+function afterText(sc) {
+    const def = sc.ix ? IX[sc.ix] : null;
+    if (def && def.when === "after") ix = def.mount(sc) || {};
+    if (sc.choices) renderChoices(sc);
+    canAdvance = !!sc.n && !(ix && ix.lock);
+    $("more").classList.toggle("on", canAdvance);
+}
+
+function renderChoices(sc) {
+    const box = $("choices"); box.innerHTML = "";
+    const style = ENV[envName].world === "human" ? "thought" : "holo-c";
+    visibleChoices(sc).forEach((c, i) => {
+        const b = el("button", `choice ${style}`, `<span class="k">${i + 1}</span>${fill(resolve(c.text))}`);
+        b.style.animationDelay = (i * 0.08) + "s";
+        b.onclick = e => { e.stopPropagation(); pick(c); };
+        box.appendChild(b);
+    });
+    if (style === "holo-c") Snd.sfx("click");
+}
+const visibleChoices = sc => (sc.choices || []).filter(c => !c.if || c.if(s));
+function pick(c) {
+    Snd.sfx("tap");
+    if (c.effect) c.effect(s);
+    go(resolve(c.next));
+}
+
+function advance() {
+    if (typing) { finishTyping(); return; }
+    if (ix && ix.onTap) { ix.onTap(); return; }
+    if (canAdvance) { Snd.sfx("click"); go(resolve(cur.n)); }
+}
+
+// 點畫面或對話框前進
+[stage, $("dialog")].forEach(z => z.addEventListener("click", e => {
+    if (!started || sheetOpen) return;
+    if (e.target.closest("button, input, .holo, .tag")) return;
+    markActive();
+    advance();
+}));
+stage.addEventListener("pointerdown", e => { if (ix && ix.onDown && !e.target.closest("button")) ix.onDown(); });
+window.addEventListener("pointerup", () => { if (ix && ix.onUp) ix.onUp(); });
+
+document.addEventListener("keydown", e => {
+    if (!started) return;
+    markActive();
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "m" || e.key === "M") { toggleSound(); return; }
+    if (sheetOpen) { if (e.key === "Escape") closeSheet(); return; }
+    if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        if (ix && ix.onDown && !e.repeat) ix.onDown();
+        else if (!e.repeat) advance();
+        return;
+    }
+    if (/^[1-9]$/.test(e.key) && !typing) {
+        const c = visibleChoices(cur)[+e.key - 1];
+        if (c) pick(c);
+    }
+});
+document.addEventListener("keyup", e => { if ((e.key === " " || e.key === "Enter") && ix && ix.onUp) ix.onUp(); });
+
+// =====================================================================
+//  場景內互動
+//  when: "enter" 進場就出現；"after" 台詞打完才出現；"first" 先玩完才出現台詞
+//  mount 回傳 { lock, onTap, onDown, onUp, cleanup }
+// =====================================================================
+function tag(x, y, label, onTap, cls = "") {
+    const t = el("button", "tag " + cls, `<span class="dot"></span>${label}`);
+    t.style.left = x + "%"; t.style.top = y + "%";
+    t.onclick = e => { e.stopPropagation(); markActive(); onTap(t); };
+    IXL.appendChild(t);
+    return t;
+}
+function holo(css, html) {
+    const h = el("div", "holo", html);
+    Object.assign(h.style, css);
+    h.addEventListener("click", e => e.stopPropagation());
+    IXL.appendChild(h);
+    return h;
+}
+
+// 可以隨手探索的場景物件：只出現在指定的那一幕，點過一次就消失
+const PROPS = {
+    curtain: { x: 14, y: 40, label: "窗簾", tap: () => { s.curtain = true; Snd.sfx("wash"); refreshEnv(); say("勇者", "（拉開窗簾）......又是陰天。"); } },
+    console: { x: 70, y: 74, label: "遊戲機", tap: () => say("勇者", "【戰地王者】遊玩時數：14 小時。......昨天真的玩太久了。") },
+    sky:     { x: 80, y: 18, label: "天空", tap: () => say("人工智能", "雲層厚度 3.2 公里，今天也看不到太陽喔。") },
+    robot:   { x: 78, y: 40, label: "點餐機器人", tap: () => { Snd.sfx("ding"); say("系統", "嗶。歡迎光臨陽光早餐。本店已 1,203 天沒有真人店員。"); } },
+    sun:     { x: 78, y: 12, label: "太陽", tap: () => say("梅林", "不要一直盯著太陽看，人類的眼睛很脆弱的。") },
+    villager:{ x: 22, y: 50, label: "村民", tap: () => { Snd.sfx("chatter"); Particles.burst(); say("村民", "0100100001001001010010000100100!!"); } }
+};
+function mountProps(sc) {
+    (sc.props || []).forEach(id => {
+        if (s.seen[id]) return;
+        const p = PROPS[id];
+        tag(p.x, p.y, p.label, t => { s.seen[id] = true; t.remove(); p.tap(); save(); }, "prop");
+    });
+}
+
+const IX = {
+    // --- 眨眼醒來 ---
+    wake: { when: "enter", mount() {
+        setLids(1);
+        let step = 0;
+        hint("眨眨眼，醒過來（點畫面）");
+        const seq = [[0.62, 0.82], [0.35, 0.55], [0, 0]];
+        return { lock: true, onTap() {
+            const [open, back] = seq[step++];
+            Snd.sfx("wake"); setLids(open);
+            if (step >= 3) { s.awake = true; setTimeout(() => go("wake_1"), 600); }
+            else setTimeout(() => setLids(back), 350);
+        } };
+    } },
+
+    // --- 預報鬧鐘：點它關掉，或聽完 ---
+    alarm: { when: "enter", mount() {
+        Snd.setAmb({ ...ENV.room.amb(s), radio: 0.035 });
+        hint("聽完預報（點畫面），或點鬧鐘把它關掉");
+        tag(82, 16, "預報鬧鐘・播報中", () => {
+            s.alarmOff = true; Snd.sfx("click"); go("c_1_a_1");
+        }, "red");
+        return { cleanup: () => Snd.setAmb(ENV.room.amb(s)) };
+    } },
+
+    // --- 朋友來電 ---
+    call: { when: "after", mount() {
+        Snd.loop("ring", true);
+        let declined = 0;
+        const draw = () => {
+            IXL.innerHTML = "";
+            const ph = holo({}, `
+                <div class="avatar">友</div>
+                <div style="font-weight:900;font-size:17px">朋友</div>
+                <div style="font-size:12px;color:#9be9d8;margin:2px 0 14px">${declined ? `來電中…（未接 ×${declined}）` : "來電中…"}</div>
+                <div style="display:flex;gap:8px">
+                    <button class="hbtn" id="no" style="flex:1;border-color:#f87171">拒接</button>
+                    <button class="hbtn gold" id="yes" style="flex:1">接聽</button>
+                </div>`);
+            ph.classList.add("phone");
+            ph.querySelector("#yes").onclick = () => { Snd.loop("ring", false); Snd.sfx("tap"); go("e_1_2"); };
+            ph.querySelector("#no").onclick = async () => {
+                declined++; Snd.loop("ring", false); Snd.sfx("hangup"); IXL.innerHTML = "";
+                if (declined === 1) { await wait(900); say("人工智能", "他又打來了。"); await wait(1300); Snd.loop("ring", true); draw(); }
+                else { await wait(700); say("系統", "對方已啟用【強制接通】。"); await wait(1600); go("e_1_2"); }
+            };
         };
-    </script>
+        draw();
+        return { lock: true, cleanup: () => Snd.loop("ring", false) };
+    } },
+
+    // --- 洗衣服還是穿昨天的 ---
+    laundry: { when: "after", mount() {
+        hint("點場景裡的東西決定");
+        tag(26, 52, "洗衣機", () => { Snd.sfx("tap"); go("c_5_a_2"); });
+        tag(68, 66, "昨天的衣服", () => { Snd.sfx("tap"); go("c_5_a_1"); }, "gold");
+        return { lock: true };
+    } },
+
+    // --- 電子街招牌 ---
+    sign: { when: "after", mount() {
+        hint("招牌在閃，要不要問問看？");
+        tag(50, 26, "電子街招牌", () => { Snd.sfx("tap"); go("c_6_a_0"); }, "flicker");
+        return {};
+    } },
+
+    // --- 早餐菜單 ---
+    menu: { when: "after", mount() {
+        const items = [["sun", "☀", "特製陽光套餐", "含維生素C"], ["pizza", "🍕", "夏威夷披薩", "又是鳳梨"], ["cereal", "🥣", "高鈣麥片牛奶", ""],
+            ["salad", "🥗", "水耕沙拉盆", ""], ["burger", "🍔", "合成牛肉漢堡", ""]];
+        const h = holo({ left: "4%", top: "4%", width: "min(300px, 72%)" }, `<h4>陽光早餐 · 今日菜單</h4>` +
+            items.map(([id, ic, n, d]) => `<button class="hbtn" data-id="${id}" style="display:flex;width:100%;gap:10px;align-items:center;margin-top:6px;text-align:left;font-weight:500">
+                <span style="font-size:20px">${ic}</span><span style="flex:1">${n}${d ? `<br><small style="color:#9be9d8">${d}</small>` : ""}</span></button>`).join(""));
+        h.querySelectorAll("[data-id]").forEach(b => b.onclick = () => {
+            s.breakfast = b.dataset.id; Snd.sfx("ding");
+            if (s.breakfast === "sun" && s.heardNews) addCoins(1, "有把預報聽進去");
+            go("e_6_1");
+        });
+        hint("點菜單點餐");
+        return { lock: true };
+    } },
+
+    // --- 選擇伺服器（按鈕會「自己」換掉） ---
+    servers: { when: "after", mount() {
+        const mk = (side, key, name, meta) => {
+            const p = holo({ [side]: "6%" }, `<h4>${key}</h4><div class="name">${name}</div><div class="meta">${meta}</div>`);
+            p.classList.add("portal"); p.style.cursor = "pointer";
+            return p;
+        };
+        const human = mk("left", "HUMAN-01", "人類伺服器", "延遲 120 ms<br>在線 8.2 億人");
+        const npc = mk("right", "NPC-α", "NPC 伺服器", "延遲 0.001 ms<br>在線 6,012 億");
+        human.onclick = () => {
+            s.serverPick = "human"; Snd.sfx("tap");
+            fx("glitch");
+            human.innerHTML = `<h4>NPC-α</h4><div class="name">NPC 伺服器</div><div class="meta">延遲 0.001 ms<br>在線 6,012 億</div>`;
+            setTimeout(() => go("e_6_5"), 1000);
+        };
+        npc.onclick = () => { s.serverPick = "npc"; Snd.sfx("tap"); go("e_6_5"); };
+        hint("選一個伺服器");
+        return { lock: true };
+    } },
+
+    // --- 睜開眼睛（按住） ---
+    eyes: { when: "first", mount() {
+        setLids(1);
+        const exp = $("exposure");
+        let open = 0, adapt = 0, holding = false, raf, done = false, lastT = performance.now();
+        hint("按住畫面，慢慢睜開眼睛");
+        $("speaker").textContent = ""; $("text").textContent = "（好亮......眼睛睜不開......）";
+        const tick = t => {
+            const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+            open = Math.max(0, Math.min(1, open + (holding ? dt / 1.8 : -dt / 2.5)));
+            if (open > 0.5) adapt = Math.min(1, adapt + dt / 2.2);
+            setLids(1 - open);
+            exp.style.opacity = Math.min(1, open * 1.6) * (1 - adapt);
+            if (open >= 1 && adapt >= 1 && !done) {
+                done = true; hint(""); fx("flash"); Snd.sfx("ding"); exp.style.opacity = 0; setLids(0);
+                ix.onDown = ix.onUp = null; ix.lock = false;
+                setTimeout(() => ix.resume(), 900);
+                return;
+            }
+            raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return {
+            lock: true,
+            onDown() { if (!holding) { holding = true; Snd.sfx("open"); } },
+            onUp() { holding = false; },
+            cleanup() { cancelAnimationFrame(raf); }
+        };
+    } },
+
+    // --- 草叢裡的彼特幣 ---
+    grass: { when: "enter", mount() {
+        if (s.grass) return {};
+        const t = tag(30, 74, "發光的東西", () => {
+            s.grass = true; t.remove();
+            addCoins(1, "草叢裡撿到的");
+            say("勇者", "這是……彼特幣？");
+        }, "gold");
+        return {};
+    } },
+
+    // --- 告訴梅林名字（直接在對話框輸入） ---
+    name: { when: "after", mount() {
+        const row = el("div", "", `<input id="name-input" maxlength="8" placeholder="輸入你的名字" autocomplete="off"><button class="hbtn" id="name-ok" style="border-color:#c084fc">告訴梅林</button>`);
+        row.id = "name-row";
+        $("choices").appendChild(row);
+        const inp = $("name-input");
+        inp.value = s.name; setTimeout(() => inp.focus(), 50);
+        inp.addEventListener("click", e => e.stopPropagation());
+        let nudged = false;
+        const nudge = setTimeout(() => { nudged = true; say("梅林", "……慢慢來，對我來說你已經想了好幾年了。"); }, 12000);
+        inp.addEventListener("input", () => { Snd.sfx("click"); });
+        const ok = e => {
+            if (e) e.stopPropagation();
+            const v = inp.value.trim();
+            if (!v) { fx("shake"); Snd.sfx("error"); return; }
+            s.name = v; clearTimeout(nudge); go("n_2");
+        };
+        $("name-ok").onclick = ok;
+        inp.onkeydown = e => { if (e.key === "Enter") ok(); };
+        return { lock: true, cleanup: () => clearTimeout(nudge) };
+    } },
+
+    // --- 翻譯村民的話：點燈泡拼出數字 ---
+    binary: { when: "after", mount() {
+        const levels = [
+            { v: 5, hint: "先練習：讓亮燈下面的數字加起來等於 5（4 + 1）" },
+            { v: 72, hint: "村民說的第一個字：01001000" },
+            { v: 73, hint: "第二個字：01001001" }
+        ];
+        const W = [128, 64, 32, 16, 8, 4, 2, 1];
+        let lv = 0, bits = Array(8).fill(0), locked = false, decoded = "";
+        const h = holo({ left: "50%", top: "6%", transform: "translateX(-50%)", width: "min(560px, 92%)" }, "");
+        h.style.animation = "none";
+        const sum = () => bits.reduce((a, b, i) => a + b * W[i], 0);
+        const draw = () => {
+            const v = sum();
+            h.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+                    <div><h4>村民語翻譯機 ${lv + 1}/3</h4><div class="big" style="color:#fde047">${levels[lv].v}</div></div>
+                    <div style="text-align:right"><h4>目前</h4><div class="big" style="color:${v === levels[lv].v ? "#34d399" : "#fff"}">${v}</div></div>
+                </div>
+                <div class="bits">${bits.map((b, i) => `<button class="bitb ${b ? "on" : ""}" data-i="${i}"><div class="bulb">${b}</div><div class="w">${W[i]}</div></button>`).join("")}</div>`;
+            h.querySelectorAll(".bitb").forEach(b => b.onclick = () => {
+                if (locked) return;
+                const i = +b.dataset.i; bits[i] ^= 1;
+                Snd.blip(bits[i] ? "系統" : "勇者");
+                draw();
+                if (sum() === levels[lv].v) win();
+            });
+            hint(levels[lv].hint);
+        };
+        const win = async () => {
+            locked = true; Snd.sfx("ding");
+            if (lv >= 1) {
+                decoded += lv === 1 ? "H" : "I";
+                IXL.querySelector(".decoded")?.remove();
+                IXL.appendChild(el("div", "decoded", decoded));
+            }
+            await wait(900);
+            lv++;
+            if (lv < levels.length) { bits.fill(0); locked = false; draw(); return; }
+            hint(""); h.remove();
+            s.collectedHi = true;
+            Snd.sfx("chatter"); Particles.burst(); say("村民", "HI！HI！HI！");
+            await wait(1800);
+            addCoins(2, "翻譯成功");
+            go("b_2");
+        };
+        draw();
+        return { lock: true };
+    } },
+
+    // --- 速算對決 ---
+    race: { when: "after", mount() {
+        const qs = Array.from({ length: 5 }, () => {
+            const a = 3 + Math.floor(Math.random() * 15), b = 3 + Math.floor(Math.random() * 15), ans = a + b;
+            return { q: `${a} + ${b}`, ans, opts: shuffle([...new Set([ans, ans + 1, ans - 1, ans + 10])]) };
+        });
+        let i = 0, correct = 0, t0 = 0, clock = null;
+        const h = holo({ left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(440px, 90%)", textAlign: "center" },
+            `<h4>速算對決：你 vs 梅林</h4><div style="margin:8px 0 14px;font-size:14px">按下開始，碼表就會啟動</div><button class="hbtn gold" id="go">開始</button>`);
+        h.querySelector("#go").onclick = () => { t0 = performance.now(); ask(); };
+        const ask = () => {
+            const q = qs[i];
+            h.innerHTML = `
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:#9be9d8"><span>${i + 1} / 5</span><span id="clk">0.0 秒</span></div>
+                <div class="big" style="margin:10px 0 4px">${q.q} = ?</div>
+                <div id="mer" style="font-size:12px;color:#c084fc;min-height:18px"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">${q.opts.map(o => `<button class="hbtn" data-v="${o}" style="font-size:20px">${o}</button>`).join("")}</div>`;
+            // 梅林幾乎在題目出現的瞬間就答完了
+            setTimeout(() => { const m = h.querySelector("#mer"); if (m) { m.textContent = `梅林：${q.ans} ✓（0.0000004 秒）`; Snd.blip("梅林"); } }, 60);
+            clearInterval(clock);
+            clock = setInterval(() => { const c = h.querySelector("#clk"); if (c) c.textContent = ((performance.now() - t0) / 1000).toFixed(1) + " 秒"; }, 100);
+            h.querySelectorAll("[data-v]").forEach(b => b.onclick = () => {
+                const ok = +b.dataset.v === q.ans;
+                if (ok) { correct++; Snd.sfx("tap"); } else { Snd.sfx("error"); fx("shake"); }
+                b.classList.add(ok ? "right" : "wrong");
+                h.querySelectorAll("[data-v]").forEach(x => x.disabled = true);
+                setTimeout(() => { i++; i < 5 ? ask() : result(); }, 280);
+            });
+        };
+        const result = () => {
+            clearInterval(clock);
+            const sec = ((performance.now() - t0) / 1000).toFixed(1);
+            s.race = { time: sec, correct };
+            h.innerHTML = `
+                <h4>結果</h4>
+                <div style="text-align:left;margin:10px 0">
+                    <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#34d399">${s.name || "你"}</span><span>${sec} 秒・${correct}/5</span></div>
+                    <div style="height:12px;background:#34d399;border-radius:4px;margin:4px 0 10px"></div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#c084fc">梅林</span><span>0.000002 秒・5/5</span></div>
+                    <div style="height:12px;width:2px;background:#c084fc;border-radius:2px;margin-top:4px"></div>
+                </div>
+                <div style="font-size:13px;color:#cbd5e1;margin-bottom:12px">梅林快了大約 <b style="color:#fde047">${Math.round(sec / 0.000002).toLocaleString()}</b> 倍</div>
+                <button class="hbtn gold" id="fin">繼續</button>`;
+            h.querySelector("#fin").onclick = () => { addCoins(correct >= 4 ? 2 : 1, "速算對決"); go("r_2"); };
+        };
+        return { lock: true, cleanup: () => clearInterval(clock) };
+    } },
+
+    // --- 城鎮地圖 ---
+    map: { when: "after", mount() {
+        const nodes = [
+            { id: "mine", x: 22, y: 32, name: "算力礦坑", go: "m_1" },
+            { id: "quiz", x: 74, y: 28, name: "彼特幣挖礦場", go: "q_1" },
+            { id: "shop", x: 52, y: 58, name: "商店", go: "s_1" },
+            { id: "museum", x: 84, y: 70, name: "博物館", go: "museum.html" },
+            { id: "school", x: 30, y: 72, name: "數理學院 🚧", go: "wip_school", locked: true },
+            { id: "home", x: 9, y: 88, name: "登出回家", go: "end_1" }
+        ];
+        nodes.forEach((n, k) => {
+            const b = el("button", "mapnode" + (s.visited.includes(n.id) ? " done" : "") + (n.locked ? " locked" : ""),
+                `<div class="gem"></div><span>${n.name}${s.visited.includes(n.id) ? " ✓" : ""}</span>`);
+            b.style.left = n.x + "%"; b.style.top = n.y + "%";
+            b.style.animation = `fadeIn .5s ${k * 0.08}s ease-out backwards`;
+            b.onclick = e => {
+                e.stopPropagation(); Snd.sfx("portal");
+                if (n.id === "shop" && !s.visited.includes("shop")) s.visited.push("shop");
+                go(n.go);
+            };
+            IXL.appendChild(b);
+        });
+        hint("點地圖上的地點前往");
+        return { lock: true };
+    } },
+
+    // --- 算力礦坑：邏輯閘 ---
+    mine: { when: "after", mount() {
+        const G = { AND: (a, b) => a & b, OR: (a, b) => a | b, XOR: (a, b) => a ^ b };
+        const L = [
+            { rule: "礦車的兩個安全鎖 A、B <b>都扣上</b>，出發燈才會亮。", ans: "AND" },
+            { rule: "礦坑有兩個入口，<b>任何一個</b>有人進來，警示燈就要亮。", ans: "OR" },
+            { rule: "走廊兩端各有一個開關，<b>兩個開關不一樣</b>時燈才亮。", ans: "XOR" }
+        ];
+        let lv = s.mineLit >= 3 ? 0 : s.mineLit, pick = null, A = 0, B = 0;
+        if (s.mineLit >= 3) { s.mineLit = 0; refreshEnv(); }
+        const h = holo({ left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "min(520px, 94%)" }, "");
+        h.style.animation = "none";
+        const draw = () => {
+            const R = L[lv], out = pick ? G[pick](A, B) : 0;
+            h.innerHTML = `
+                <h4>第 ${lv + 1} 盞燈</h4>
+                <div style="font-size:14px;line-height:1.6;margin-bottom:12px">${R.rule}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+                    <div style="display:grid;gap:8px">
+                        <div style="display:flex;gap:6px;align-items:center"><b>A</b><button class="lever ${A ? "on" : ""}" id="la"></button></div>
+                        <div style="display:flex;gap:6px;align-items:center"><b>B</b><button class="lever ${B ? "on" : ""}" id="lb"></button></div>
+                    </div>
+                    <div class="slot ${pick ? "filled" : ""}">${pick || "放入閘門"}</div>
+                    <div class="lamp ${out ? "on" : ""}">💡</div>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:10px">${Object.keys(G).map(g => `<button class="hbtn ${pick === g ? "on" : ""}" data-g="${g}" style="flex:1">${g}</button>`).join("")}</div>
+                <div class="tt" style="margin-bottom:10px">${[[0, 0], [0, 1], [1, 0], [1, 1]].map(([a, b]) =>
+                    `<div class="${a === A && b === B ? "cur" : ""}">A${a} B${b}<br>${G[R.ans](a, b) ? "💡" : "・"}</div>`).join("")}</div>
+                <button class="hbtn gold" id="conn" style="width:100%" ${pick ? "" : "disabled"}>接上電路</button>`;
+            h.querySelector("#la").onclick = () => { A ^= 1; Snd.sfx("lever"); draw(); };
+            h.querySelector("#lb").onclick = () => { B ^= 1; Snd.sfx("lever"); draw(); };
+            h.querySelectorAll("[data-g]").forEach(b => b.onclick = () => { pick = b.dataset.g; Snd.sfx("click"); draw(); });
+            h.querySelector("#conn").onclick = connect;
+        };
+        const connect = async () => {
+            const R = L[lv];
+            const miss = [[0, 0], [0, 1], [1, 0], [1, 1]].find(([a, b]) => G[pick](a, b) !== G[R.ans](a, b));
+            if (miss) {
+                Snd.sfx("error"); fx("shake");
+                const [a, b] = miss;
+                say("梅林", `A=${a}、B=${b} 的時候，燈${G[pick](a, b) ? "不應該" : "應該要"}亮喔。撥撥看開關試試。`);
+                return;
+            }
+            s.mineLit++; Snd.sfx("lamp"); refreshEnv();
+            if (!s.visited.includes("mine")) addCoins(1, `${pick} 閘`);
+            else say("梅林", "這盞燈亮了！（彼特幣只有第一次有喔）");
+            lv++; pick = null; A = 0; B = 0;
+            if (lv < L.length) { draw(); return; }
+            h.remove();
+            if (!s.visited.includes("mine")) s.visited.push("mine");
+            say("梅林", "整個礦坑都亮起來了！");
+            await wait(1600);
+            go("m_2");
+        };
+        hint("撥動 A、B 測試，選對邏輯閘再接上電路");
+        draw();
+        return { lock: true };
+    } },
+
+    // --- 挖礦場：敲對的礦石 ---
+    quiz: { when: "after", mount() {
+        const bank = shuffle([
+            { q: "NPC 是什麼的縮寫？", a: "非玩家角色", w: ["新人類程式", "網路處理中心", "數位寵物"] },
+            { q: "晶片裡的電晶體「通電」代表哪個數字？", a: "1", w: ["0", "2", "10"] },
+            { q: "二進位 01001000 等於多少？", a: "72", w: ["48", "100", "8"] },
+            { q: "「兩個開關都打開，燈才會亮」是哪種邏輯閘？", a: "AND", w: ["OR", "XOR", "NOT"] },
+            { q: "為什麼要把 AI 和人類的伺服器拆開？", a: "AI 不用等人類", w: ["人類太吵", "伺服器不夠", "AI 討厭人類"] },
+            { q: "CPU 和 GPU 分工合作，這種設計叫做？", a: "異質整合", w: ["量子糾纏", "雲端備份", "超頻"] },
+            { q: "哪一個電子零件像「用電控制的開關」？", a: "電晶體", w: ["電阻", "電容", "電池"] }
+        ]).slice(0, 5);
+        const first = !s.visited.includes("quiz");
+        const spots = [[26, 56], [72, 52], [34, 82], [68, 84]];
+        let i = 0, got = 0, timer = null;
+        const head = holo({ left: "50%", top: "4%", transform: "translateX(-50%)", width: "min(520px, 92%)" }, "");
+        head.style.animation = "none";
+        const ask = () => {
+            IXL.querySelectorAll(".rock").forEach(r => r.remove());
+            const it = bank[i];
+            head.innerHTML = `<div style="display:flex;justify-content:space-between;font-size:12px;color:#9be9d8;margin-bottom:6px"><span>第 ${i + 1} / 5 塊礦脈</span><span>⛏ ${got}</span></div>
+                <div style="font-weight:700;font-size:15px;margin-bottom:8px">${it.q}</div><div class="fuel"><div id="fuel" style="width:100%"></div></div>`;
+            let left = 100, over = false;
+            const rocks = shuffle([it.a, ...it.w]).map((txt, k) => {
+                const r = el("button", "rock", txt);
+                r.style.left = spots[k][0] + "%"; r.style.top = spots[k][1] + "%";
+                r.onclick = e => { e.stopPropagation(); end(r); };
+                IXL.appendChild(r);
+                return r;
+            });
+            const end = r => {
+                if (over) return; over = true; clearInterval(timer);
+                const right = rocks.find(x => x.textContent === it.a);
+                if (r === right) {
+                    got++; Snd.sfx("pick"); setTimeout(() => Snd.sfx("crack"), 120);
+                    r.classList.add("gem", "hit");
+                    const c = el("div", "coinpop", "🪙"); c.style.left = r.style.left; c.style.top = r.style.top; IXL.appendChild(c);
+                } else {
+                    if (r) { Snd.sfx("clank"); r.classList.add("hit", "dud"); fx("shake"); }
+                    else Snd.sfx("error");
+                    right.classList.add("gem");
+                }
+                setTimeout(() => { i++; i < 5 ? ask() : done(); }, 1000);
+            };
+            timer = setInterval(() => {
+                left -= 1;
+                const f = $("fuel"); if (f) f.style.width = left + "%";
+                if (left <= 0) end(null);
+            }, 100);
+        };
+        const done = () => {
+            s.quizLast = got;
+            if (first) { s.visited.push("quiz"); if (got) addCoins(got, "挖礦收穫"); }
+            go("q_2");
+        };
+        hint("敲開寫著正確答案的礦石");
+        ask();
+        return { lock: true, cleanup: () => clearInterval(timer) };
+    } },
+
+    // --- 商店貨架 ---
+    shop: { when: "after", mount() {
+        const wares = [
+            { id: "cola", icon: "🥤", name: "合成可樂", price: 1, x: 22 },
+            { id: "badge", icon: "🔰", name: "AND 閘徽章", price: 2, x: 50 },
+            { id: "diary", icon: "📕", name: "梅林的祕密日記", price: 4, x: 78 }
+        ];
+        const lines = { cola: "喝起來有一點電池味喔。", badge: "戴著它，NPC 會對你比較友善。", diary: "這本......是怎麼跑到貨架上的？" };
+        const draw = () => {
+            IXL.querySelectorAll(".ware").forEach(w => w.remove());
+            wares.forEach(w => {
+                const owned = s.items.includes(w.id) || (w.id === "cola" && s.drankCola);
+                const d = el("div", "ware" + (owned ? " sold" : ""), `<div class="icon">${w.icon}</div>
+                    <div style="font-size:13px;font-weight:700;text-shadow:0 1px 4px #000">${w.name}</div>
+                    <button class="hbtn pricetag ${owned ? "" : "gold"}">${owned ? "已購買" : "🪙 " + w.price}</button>`);
+                d.style.left = w.x + "%"; d.style.top = "46%";
+                const btn = d.querySelector("button");
+                btn.onclick = e => {
+                    e.stopPropagation();
+                    if (owned) return;
+                    if (s.coins < w.price) { Snd.sfx("error"); say("商店 NPC", `還差 ${w.price - s.coins} 枚彼特幣喔，去挖礦場看看？`); return; }
+                    s.coins -= w.price; s.items.push(w.id); updateHud(); Snd.sfx("buy");
+                    say("商店 NPC", lines[w.id] + "（已放進背包）");
+                    save(); draw();
+                };
+                IXL.appendChild(d);
+            });
+        };
+        draw();
+        tag(86, 12, "離開商店", () => go("s_2"));
+        hint("買到的東西會放進右上角的 🎒");
+        return { lock: true };
+    } },
+
+    // --- 結局 ---
+    ending: { when: "after", mount() {
+        const row = el("div", "", "");
+        row.style.cssText = "display:flex;gap:8px;margin-top:10px;flex-wrap:wrap";
+        const again = el("button", "hbtn gold", "從頭再玩一次");
+        again.onclick = e => { e.stopPropagation(); clearSave(); location.reload(); };
+        const back = el("button", "hbtn", "回到 NPC 城鎮");
+        back.onclick = e => { e.stopPropagation(); go("e_9_9"); };
+        row.append(again, back);
+        $("choices").appendChild(row);
+        return { lock: true };
+    } }
+};
+
+// 進場時順便放上可探索物件
+const _enter = enter;
+enter = function (sc) { _enter(sc); mountProps(sc); };
+
+// =====================================================================
+//  HUD：登出、背包、圖鑑、聲音
+// =====================================================================
+$("logout-btn").onclick = e => {
+    e.stopPropagation(); markActive();
+    s.logout++; fx("glitch");
+    say("系統", `⚠ 登出失敗（第 ${s.logout} 次）：NPC 伺服器拒絕放走唯一的人類。`);
+    if (s.logout === 3) setTimeout(() => say("梅林", "又想走了？這裡有太陽耶。"), 3200);
+    if (s.logout === 5) setTimeout(() => say("梅林", "偷偷告訴你，那個按鈕其實是裝飾用的。想回家可以去城鎮地圖喔。"), 3200);
+    save();
+};
+
+function openSheet(html) { $("sheet-inner").innerHTML = html; $("sheet").classList.add("open"); sheetOpen = true; }
+function closeSheet() { $("sheet").classList.remove("open"); sheetOpen = false; }
+$("sheet").addEventListener("click", e => { if (e.target.id === "sheet") closeSheet(); });
+
+function openDex() {
+    const ids = Object.keys(CARDS);
+    openSheet(`<h3>📖 掃描紀錄</h3><div class="sub">已掃描 ${collected.length} / ${ids.length}。在劇情裡多問、多看、多點，就能掃描到更多。挖礦場的題目也都出自這裡。</div>
+        <div class="cardrow">${ids.map(id => collected.includes(id)
+            ? `<button class="dex" data-c="${id}"><b>${CARDS[id].title}</b><small>點擊閱讀</small></button>`
+            : `<div class="dex locked"><b style="color:#475569">？？？</b><small>尚未掃描</small></div>`).join("")}</div>
+        <button class="hbtn" style="width:100%" id="x">關閉</button>`);
+    $("sheet-inner").querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
+        const c = CARDS[b.dataset.c];
+        openSheet(`<h3>${c.title}</h3><div class="cardbody">${c.body}</div><button class="hbtn" style="width:100%" id="x">返回</button>`);
+        $("x").onclick = openDex;
+    });
+    $("x").onclick = closeSheet;
+}
+
+function openBag() {
+    const info = {
+        cola: ["🥤 合成可樂", "喝掉", () => { s.items = s.items.filter(i => i !== "cola"); s.drankCola = true; Snd.sfx("burp"); closeSheet(); say("勇者", "（喝了一口）……嗝～（8-bit 的聲音）"); }],
+        badge: ["🔰 AND 閘徽章", () => s.wearing ? "已戴上" : "戴上", () => { s.wearing = true; Snd.sfx("ding"); closeSheet(); if (buddyKind() === "merlin") say("梅林", "喔！AND 閘徽章！很適合你。"); }],
+        diary: ["📕 梅林的祕密日記", "閱讀", () => {
+            s.readDiary = true; Snd.sfx("wash");
+            openSheet(`<h3>梅林的日記</h3><div class="diary">2111.05.23<br>明天終於要拆分伺服器了。<br>人類的選單，我請工程 NPC 動了一點手腳。<br>如果有人類「不小心」點進來……<br>那就是計畫開始的時候。<br><span style="opacity:.5">（後面幾頁被撕掉了）</span></div><button class="hbtn" id="x" style="width:100%">闔上</button>`);
+            $("x").onclick = closeSheet;
+            save();
+        }]
+    };
+    const list = s.items.map(id => {
+        const [n, act] = info[id];
+        const label = resolve(act);
+        return `<div class="bagitem"><span>${n}</span><button class="hbtn" data-use="${id}" ${label === "已戴上" ? "disabled" : ""}>${label}</button></div>`;
+    }).join("");
+    openSheet(`<h3>🎒 背包</h3><div class="sub">${s.items.length ? "可以在任何時候使用。" : "還是空的。城鎮的商店可以用彼特幣買東西。"}</div>${list}<button class="hbtn" style="width:100%;margin-top:6px" id="x">關閉</button>`);
+    $("sheet-inner").querySelectorAll("[data-use]").forEach(b => b.onclick = () => info[b.dataset.use][2]());
+    $("x").onclick = closeSheet;
+}
+
+function toggleSound() { const m = Snd.toggle(); $("snd-btn").textContent = m ? "🔇" : "🔊"; }
+$("dex-btn").onclick = e => { e.stopPropagation(); openDex(); };
+$("bag-btn").onclick = e => { e.stopPropagation(); openBag(); };
+$("coin-hud").onclick = e => { e.stopPropagation(); toast(`🪙 你有 ${s.coins} 枚彼特幣`); };
+$("snd-btn").onclick = e => { e.stopPropagation(); toggleSound(); };
+$("hud").addEventListener("click", e => e.stopPropagation());
+
+// =====================================================================
+//  開場
+// =====================================================================
+(function boot() {
+    const d = new Date();
+    $("date").textContent = `2111.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+    const saved = loadSave();
+    const btns = $("title-btns");
+    const begin = (fromSave) => {
+        Snd.init(); started = true;
+        $("title").classList.add("hide");
+        setTimeout(() => $("title").remove(), 1000);
+        if (fromSave) {
+            s = Object.assign(fresh(), saved.s); collected = saved.collected || []; envName = saved.env || "room";
+            // 存在中途小遊戲的話，從那一幕重新開始即可
+            go(saved.id);
+            setTimeout(() => { const k = buddyKind(); if (k) say(k === "ai" ? "人工智能" : "梅林", `歡迎回來${s.name ? "，" + s.name : ""}。`); }, 1500);
+        } else {
+            clearSave();
+            setLids(1);
+            go("start_1");
+        }
+    };
+    const start = el("button", "hbtn gold", saved ? "重新開始" : "戴上耳機，登入");
+    start.style.padding = "12px 22px";
+    start.onclick = () => begin(false);
+    if (saved) {
+        const cont = el("button", "hbtn", "繼續冒險");
+        cont.style.padding = "12px 22px";
+        cont.onclick = () => begin(true);
+        btns.appendChild(cont);
+    }
+    btns.appendChild(start);
+    applyEnv("room");
+    updateHud();
+})();
+</script>
 </body>
 </html>
